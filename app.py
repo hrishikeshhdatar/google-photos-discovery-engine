@@ -16,33 +16,28 @@ st.set_page_config(
 
 # Title & Senior PM Context Header
 st.title("🔍 Google Photos: AI Discovery Engine")
-st.caption("Core Experience PM Strategy | Powered by Google Gemini API")
+st.caption("Core Experience PM Strategy | Powered by Google Gemini API & Vector RAG Pipeline")
 
-# Load Dataset
+# Load Default Seed Dataset
 @st.cache_data
-def load_data():
-    with open('dataset.json', 'r') as f:
-        return json.load(f)
+def load_default_data():
+    try:
+        with open('dataset.json', 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        return []
 
-try:
-    raw_data = load_data()
-    df = pd.DataFrame(raw_data)
-except Exception as e:
-    st.error(f"Error loading dataset.json: {e}")
-    st.stop()
-
-# API Key Resolution (Supports Secrets & Sidebar Input)
+# Sidebar: Configuration, API Setup & File Upload
 st.sidebar.header("⚙️ Engine Configuration")
 
+# 1. API Key Resolution (Supports Streamlit Secrets & Sidebar Input)
 default_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
 user_key_input = st.sidebar.text_input("Gemini API Key (Optional)", value=default_key, type="password")
-
 api_key = user_key_input or default_key
 
 if api_key:
     try:
         genai.configure(api_key=api_key)
-        # Using Gemini 1.5 Flash / Flash model
         model = genai.GenerativeModel('gemini-1.5-flash')
         st.sidebar.success("🟢 Google Gemini RAG Active")
     except Exception as e:
@@ -50,32 +45,79 @@ if api_key:
         st.sidebar.error(f"Gemini Config Error: {e}")
 else:
     model = None
-    st.sidebar.info("💡 Running Local TF-IDF Vector Engine. Enter a free Gemini API Key in the sidebar or Streamlit Secrets for full AI synthesis.")
+    st.sidebar.info("💡 Running Local TF-IDF Vector Engine. Enter a free Gemini API Key or configure Streamlit Secrets for Generative RAG.")
 
-# System Classification Engine Mapping Rules
+# 2. File Uploader for Custom Datasets
+st.sidebar.markdown("---")
+st.sidebar.subheader("📤 Upload Custom Corpus")
+uploaded_file = st.sidebar.file_uploader("Upload CSV or JSON review corpus", type=["csv", "json"])
+
+# Resolve Data Source (Custom Upload vs. Default JSON)
+raw_records = []
+if uploaded_file is not None:
+    try:
+        if uploaded_file.name.endswith('.json'):
+            raw_records = json.load(uploaded_file)
+            df_raw = pd.DataFrame(raw_records)
+        elif uploaded_file.name.endswith('.csv'):
+            df_raw = pd.read_csv(uploaded_file)
+            # Automatic Column Name Harmonization
+            if 'user_quote' not in df_raw.columns:
+                for col in ['review', 'comment', 'text', 'feedback', 'User Quote', 'Review', 'Body']:
+                    if col in df_raw.columns:
+                        df_raw['user_quote'] = df_raw[col]
+                        break
+            if 'source' not in df_raw.columns:
+                df_raw['source'] = 'Uploaded Corpus'
+            if 'platform' not in df_raw.columns:
+                df_raw['platform'] = 'Multi-Platform'
+            if 'id' not in df_raw.columns:
+                df_raw['id'] = [f"custom_{i:03d}" for i in range(len(df_raw))]
+            raw_records = df_raw.to_dict(orient='records')
+        st.sidebar.success(f"Custom data loaded: {len(raw_records)} records")
+    except Exception as e:
+        st.sidebar.error(f"Error reading uploaded file: {e}")
+        raw_records = load_default_data()
+else:
+    raw_records = load_default_data()
+
+if not raw_records:
+    st.error("No dataset found. Please verify 'dataset.json' exists in your repo or upload a custom CSV/JSON file.")
+    st.stop()
+
+df = pd.DataFrame(raw_records)
+
+if 'user_quote' not in df.columns:
+    st.error("Dataset missing required text column. Ensure your JSON/CSV has a 'user_quote', 'review', or 'comment' field.")
+    st.stop()
+
+# Rule-based Taxonomy Classification Engine
 def classify_stage_rule_based(quote):
+    if not isinstance(quote, str):
+        return "2. Express Failure", "General retrieval friction."
     quote_lower = quote.lower()
-    if "don't even bother" in quote_lower or "usually don't" in quote_lower:
+    if "don't even bother" in quote_lower or "usually don't" in quote_lower or "gave up" in quote_lower:
         return "1. Initiate Failure", "Low motivation to initiate due to past failure friction."
-    elif "can't remember the exact" in quote_lower or "don't remember" in quote_lower or "vibe" in quote_lower:
+    elif "can't remember the exact" in quote_lower or "don't remember" in quote_lower or "vibe" in quote_lower or "remembered" in quote_lower:
         return "2. Express Failure", "User struggles to translate episodic memory into search text."
-    elif "zero results" in quote_lower or "ocr failed" in quote_lower or "gave me random" in quote_lower:
+    elif "zero results" in quote_lower or "ocr failed" in quote_lower or "gave me random" in quote_lower or "no results" in quote_lower:
         return "3. Understand Failure", "System failed semantic matching or OCR context detection."
-    elif "scroll through every" in quote_lower or "thousands" in quote_lower or "too many" in quote_lower:
+    elif "scroll through every" in quote_lower or "thousands" in quote_lower or "too many" in quote_lower or "scroll" in quote_lower:
         return "4. Evaluate Failure", "High cognitive load evaluating candidate thumbnails."
-    elif "tried changing words" in quote_lower or "zero suggestions" in quote_lower:
+    elif "tried changing words" in quote_lower or "zero suggestions" in quote_lower or "refine" in quote_lower:
         return "5. Recover Failure", "Search loop broke down; system offered no refinement path."
     return "2. Express Failure", "General retrieval friction."
 
-# Process Dataset
+# Process & Enrich Dataset
 processed_records = []
 for idx, row in df.iterrows():
-    stage, breakdown = classify_stage_rule_based(row['user_quote'])
+    quote = str(row.get('user_quote', ''))
+    stage, breakdown = classify_stage_rule_based(quote)
     processed_records.append({
-        "ID": row['id'],
-        "Source": row['source'],
-        "Platform": row['platform'],
-        "User Quote": row['user_quote'],
+        "ID": row.get('id', f"rev_{idx:03d}"),
+        "Source": row.get('source', 'Public Forum'),
+        "Platform": row.get('platform', 'Cross-Platform'),
+        "User Quote": quote,
         "Funnel Failure Stage": stage,
         "Failure Diagnostics": breakdown
     })
@@ -89,8 +131,8 @@ col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric(label="Total Scraped Signals", value=len(proc_df))
 with col2:
-    top_stage = proc_df['Funnel Failure Stage'].mode()[0]
-    st.metric(label="Primary Bottleneck Stage", value=top_stage.split(". ")[1])
+    top_stage = proc_df['Funnel Failure Stage'].mode()[0] if not proc_df.empty else "N/A"
+    st.metric(label="Primary Bottleneck Stage", value=top_stage.split(". ")[1] if ". " in top_stage else top_stage)
 with col3:
     st.metric(label="Conditional Recovery Rate", value="< 12%", delta="-88% Drop-off")
 with col4:
@@ -131,7 +173,7 @@ st.markdown("---")
 
 # Semantic Analysis & Gemini RAG Layer
 st.subheader("🤖 AI Query Interface over Discovery Data")
-st.write("Query the ingested user feedback using Gemini natural language synthesis.")
+st.write("Query the ingested user feedback using Gemini natural language synthesis or local vector similarity search.")
 
 user_query = st.text_input(
     "Ask the Discovery Engine a question:", 
@@ -140,7 +182,7 @@ user_query = st.text_input(
 
 if user_query:
     if model:
-        with st.spinner("Analyzing review corpus with Google Gemini..."):
+        with st.spinner("Analyzing review corpus with Google Gemini RAG pipeline..."):
             context = "\n".join([f"- [{r['Source']}] \"{r['User Quote']}\" (Stage: {r['Funnel Failure Stage']})" for r in processed_records])
             prompt = f"""
             You are an expert Senior Product Manager at Google Photos.
@@ -171,7 +213,7 @@ if user_query:
         cosine_sim = cosine_similarity(tfidf_matrix[-1], tfidf_matrix[:-1]).flatten()
         top_indices = cosine_sim.argsort()[::-1][:3]
         
-        st.write("Top semantic matches from review corpus:")
+        st.write("Top semantic matches from ingested review corpus:")
         for idx in top_indices:
             score = cosine_sim[idx]
             match = processed_records[idx]
