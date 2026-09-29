@@ -1,0 +1,50 @@
+[
+  {
+    "id": "rev_001",
+    "source": "Reddit (r/googlephotos)",
+    "user_quote": "I tried searching for 'the small coffee shop in Goa with yellow chairs' and Google Photos gave me random yellow flowers from 5 years ago. I know the photo exists, but I can't remember the exact month or year!",
+    "platform": "Android"
+  },
+  {
+    "id": "rev_002",
+    "source": "Google Play Store",
+    "user_quote": "Search is useless when you forget when you took something. I wanted to find a picture of my dog's medicine prescription from last summer. Searching 'medicine' returns 200 documents and I have to scroll through every single one.",
+    "platform": "Android"
+  },
+  {
+    "id": "rev_003",
+    "source": "App Store",
+    "user_quote": "I remembered taking a photo of a wooden bar sign during a road trip, but couldn't remember which town. Search gave zero results for 'wooden sign'. I tried changing words to 'pub', 'wood', 'signboard' but got nothing and gave up.",
+    "platform": "iOS"
+  },
+  {
+    "id": "rev_004",
+    "source": "Google Support Forum",
+    "user_quote": "Why can't I search by photo composition or vibe? Like 'sunset through a window' or 'red dress at a wedding'? Photos only picks up clear face tags or explicit geotags.",
+    "platform": "Web"
+  },
+  {
+    "id": "rev_005",
+    "source": "Reddit (r/techsupport)",
+    "user_quote": "I spent 30 minutes trying to find a screenshot of a recipe I saved in 2022. I don't remember the dish name, just that it had spinach and garlic in the ingredients list. Search OCR failed completely.",
+    "platform": "Android"
+  },
+  {
+    "id": "rev_006",
+    "source": "Google Play Store",
+    "user_quote": "When a search fails, Google Photos gives you zero suggestions on how to fix it. It just shows 'No results found'. You're left guessing what keywords to remove or add.",
+    "platform": "Android"
+  },
+  {
+    "id": "rev_007",
+    "source": "App Store",
+    "user_quote": "I remembered the photo was taken at night near a pool, but I couldn't filter search results by 'nighttime' or 'outdoors'. It returned thousands of daytime pool photos.",
+    "platform": "iOS"
+  },
+  {
+    "id": "rev_008",
+    "source": "Reddit (r/googlephotos)",
+    "user_quote": "I have 40,000 photos. Finding a picture from 4 years ago based on a vague memory is so frustrating that I usually don't even bother trying anymore unless it's critical.",
+    "platform": "Android"
+  }
+]
