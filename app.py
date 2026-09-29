@@ -3,7 +3,9 @@ import os
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from openai import OpenAI
+import google.generativeai as genai
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 # Streamlit Page Setup
 st.set_page_config(
@@ -14,7 +16,7 @@ st.set_page_config(
 
 # Title & Senior PM Context Header
 st.title("🔍 Google Photos: AI Discovery Engine")
-st.caption("Core Experience PM Strategy | Analyzing Photo Retrieval Failure Modes at Scale")
+st.caption("Core Experience PM Strategy | Powered by Google Gemini API")
 
 # Load Dataset
 @st.cache_data
@@ -29,17 +31,28 @@ except Exception as e:
     st.error(f"Error loading dataset.json: {e}")
     st.stop()
 
-# Sidebar: API Settings & Global Controls
+# API Key Resolution (Supports Secrets & Sidebar Input)
 st.sidebar.header("⚙️ Engine Configuration")
-api_key = st.sidebar.text_input("OpenAI API Key (Optional for RAG)", type="password")
+
+default_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
+user_key_input = st.sidebar.text_input("Gemini API Key (Optional)", value=default_key, type="password")
+
+api_key = user_key_input or default_key
 
 if api_key:
-    client = OpenAI(api_key=api_key)
+    try:
+        genai.configure(api_key=api_key)
+        # Using Gemini 1.5 Flash / Flash model
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        st.sidebar.success("🟢 Google Gemini RAG Active")
+    except Exception as e:
+        model = None
+        st.sidebar.error(f"Gemini Config Error: {e}")
 else:
-    client = None
-    st.sidebar.info("💡 Running in Preview Mode. Enter an OpenAI Key to activate live semantic analysis.")
+    model = None
+    st.sidebar.info("💡 Running Local TF-IDF Vector Engine. Enter a free Gemini API Key in the sidebar or Streamlit Secrets for full AI synthesis.")
 
-# System Classification Engine Mapping Rules (Fixed Underscore)
+# System Classification Engine Mapping Rules
 def classify_stage_rule_based(quote):
     quote_lower = quote.lower()
     if "don't even bother" in quote_lower or "usually don't" in quote_lower:
@@ -116,9 +129,9 @@ with col_right:
 
 st.markdown("---")
 
-# RAG & Semantic Search Layer over Review Corpus
+# Semantic Analysis & Gemini RAG Layer
 st.subheader("🤖 AI Query Interface over Discovery Data")
-st.write("Query the ingested user feedback to ask strategic discovery questions.")
+st.write("Query the ingested user feedback using Gemini natural language synthesis.")
 
 user_query = st.text_input(
     "Ask the Discovery Engine a question:", 
@@ -126,45 +139,47 @@ user_query = st.text_input(
 )
 
 if user_query:
-    if client:
-        with st.spinner("Analyzing review corpus with LLM..."):
-            context = "\n".join([f"- {r['User Quote']} (Stage: {r['Funnel Failure Stage']})" for r in processed_records])
+    if model:
+        with st.spinner("Analyzing review corpus with Google Gemini..."):
+            context = "\n".join([f"- [{r['Source']}] \"{r['User Quote']}\" (Stage: {r['Funnel Failure Stage']})" for r in processed_records])
             prompt = f"""
-            You are an expert AI Discovery Engine for a Senior PM at Google Photos.
-            Based on the following user feedback corpus, answer the user's question with precise insights and citations.
+            You are an expert Senior Product Manager at Google Photos.
+            Based on the following user feedback corpus, answer the user's discovery question.
 
             User Feedback Corpus:
             {context}
 
             Question: {user_query}
 
-            Provide a bulleted analysis covering:
-            1. Direct answer with user quotes.
-            2. Strategic implications for Google Photos product design.
+            Provide a crisp analysis covering:
+            1. Direct answer citing specific user evidence.
+            2. Strategic implications for Google Photos Core Experience team.
             """
-            
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.2
-            )
-            st.markdown("#### Engine Synthesis")
-            st.write(response.choices[0].message.content)
+            try:
+                response = model.generate_content(prompt)
+                st.markdown("#### 🧠 Gemini RAG Synthesis")
+                st.write(response.text)
+            except Exception as e:
+                st.error(f"Gemini API Error: {e}")
     else:
-        # Fallback keyword match in preview mode
-        st.markdown("#### Engine Synthesis (Preview Fallback)")
-        query_words = set(user_query.lower().split())
-        matched_quotes = []
-        for r in processed_records:
-            if any(word in r['User Quote'].lower() for word in query_words if len(word) > 3):
-                matched_quotes.append(r)
+        # TF-IDF Vector Fallback
+        st.markdown("#### 📐 TF-IDF Vector Semantic Search Fallback")
+        corpus = [r['User Quote'] for r in processed_records]
+        vectorizer = TfidfVectorizer(stop_words='english')
+        tfidf_matrix = vectorizer.fit_transform(corpus + [user_query])
         
-        if matched_quotes:
-            st.write(f"Found **{len(matched_quotes)} relevant user feedback records** matching your search criteria:")
-            for item in matched_quotes[:3]:
-                st.info(f"**[{item['Source']}]** \"{item['User Quote']}\"\n\n*Mapped Failure Node:* `{item['Funnel Failure Stage']}`")
-        else:
-            st.warning("No direct keyword matches found in preview mode. Enter an OpenAI API key in the sidebar for generative RAG analysis.")
+        cosine_sim = cosine_similarity(tfidf_matrix[-1], tfidf_matrix[:-1]).flatten()
+        top_indices = cosine_sim.argsort()[::-1][:3]
+        
+        st.write("Top semantic matches from review corpus:")
+        for idx in top_indices:
+            score = cosine_sim[idx]
+            match = processed_records[idx]
+            if score > 0.05:
+                st.info(f"**Similarity Score:** `{score:.2f}` | **Source:** `{match['Source']}`\n\n\"{match['User Quote']}\"\n\n*Mapped Failure Node:* `{match['Funnel Failure Stage']}`")
+            else:
+                st.warning("Low semantic confidence score for this query in the current review sample.")
+                break
 
 st.markdown("---")
 
