@@ -173,33 +173,42 @@ Provide a structured, executive summary highlighting:
 3. Strategic Opportunity for Google Photos.
 """
                 with st.spinner("Gemini is analyzing corpus evidence..."):
-                    # Auto-discover active models available on this API key
-                    chosen_model = 'gemini-1.5-flash'
+                    # Build list of active candidate models
+                    candidate_models = []
                     try:
-                        all_m = list(genai.list_models())
-                        supported = [
-                            m.name for m in all_m 
-                            if 'generateContent' in getattr(m, 'supported_generation_methods', [])
-                        ]
-                        for m_name in supported:
-                            if 'flash' in m_name.lower():
-                                chosen_model = m_name
-                                break
-                        if chosen_model not in supported and supported:
-                            chosen_model = supported[0]
+                        for m in genai.list_models():
+                            if 'generateContent' in getattr(m, 'supported_generation_methods', []):
+                                clean_name = m.name.replace('models/', '')
+                                candidate_models.append(clean_name)
                     except Exception:
                         pass
 
-                    model = genai.GenerativeModel(chosen_model)
-                    res = model.generate_content(prompt)
-                    
-                    if res and hasattr(res, 'text') and res.text:
-                        st.markdown(f"### 💡 Gemini AI Insight Synthesis (`{chosen_model}`)")
-                        st.write(res.text)
+                    preferred_order = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.0-pro']
+                    search_list = preferred_order + [m for m in candidate_models if m not in preferred_order]
+
+                    res_text = None
+                    used_model = None
+                    last_error = None
+
+                    for m_name in search_list:
+                        try:
+                            model = genai.GenerativeModel(m_name)
+                            res = model.generate_content(prompt)
+                            if res and hasattr(res, 'text') and res.text:
+                                res_text = res.text
+                                used_model = m_name
+                                break
+                        except Exception as e:
+                            last_error = e
+                            continue
+
+                    if res_text:
+                        st.markdown(f"### 💡 Gemini AI Insight Synthesis (`{used_model}`)")
+                        st.write(res_text)
                     else:
-                        st.warning("No text returned from Gemini model response.")
+                        st.error(f"❌ Gemini API Error: {str(last_error)}")
             except Exception as e:
-                st.error(f"❌ Gemini API Error: {str(e)}")
+                st.error(f"❌ Gemini Configuration Error: {str(e)}")
 
 # -----------------------------------------------------------------------------
 # TAB 2: OPPORTUNITY MATRIX & TAXONOMY
