@@ -126,7 +126,7 @@ st.sidebar.metric("Retrieval Issues Processed", f"{len(retrieval_df):,}")
 if api_key:
     st.sidebar.success("⚡ Gemini AI Engine: Online")
 else:
-    st.sidebar.warning("⚠️ Gemini AI Engine: Offline Mode")
+    st.sidebar.warning("⚠️️ Gemini AI Engine: Offline Mode")
 
 # Navigation Tabs
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -150,10 +150,20 @@ with tab1:
         if not api_key:
             st.warning("⚠️ No Gemini API Key detected in Streamlit secrets. Showing static heuristic summary:")
             st.markdown("""
+            ### Executive Summary: User Retrieval Friction & Memory Cognitive Load
+            
+            #### 1. Direct Answer
             * **Primary Struggling Photo Types:** Screenshots, document scans/receipts, and milestone event photos from 3+ years ago.
+            * **Search Formulation Behavior:** Users input natural language descriptions rather than structured metadata filters.
+            
+            #### 2. Memory Anchor Analysis
             * **What Users Remember:** Salient visual anchors (e.g., *'red jacket'*, *'beach trip'*), broad timeframes, or people present.
             * **What Users Forget:** Precise timestamps, exact folder structures, or original file tags.
-            * **Search Formulation Behavior:** Users input natural language descriptions rather than structured metadata filters.
+            
+            #### 3. Strategic Opportunity
+            * Fix core semantic search indexing failures.
+            * De-clutter AI recommendations to prioritize chronological retrieval.
+            * Improve device vs. cloud storage clarity.
             """)
         else:
             try:
@@ -161,19 +171,37 @@ with tab1:
                 genai.configure(api_key=api_key)
                 
                 sample_text = "\n".join(retrieval_df['full_text'].sample(min(30, len(retrieval_df))).tolist())
+                
+                # Strict prompt eliminating scratchpads, outlines, and role commentary
                 prompt = f"""You are a Principal Product Manager for Google Photos.
-Synthesize the following real user feedback to answer this question: '{user_query}'
 
-User Feedback Context:
+TASK:
+Synthesize the following real user feedback to answer this research question:
+"{user_query}"
+
+USER FEEDBACK CONTEXT:
 {sample_text}
 
-Provide a structured, executive summary highlighting:
-1. Direct Answer backed by user evidence.
-2. Memory Anchor Analysis (What users remember vs. forgot).
-3. Strategic Opportunity for Google Photos.
+CRITICAL OUTPUT INSTRUCTIONS:
+- Output ONLY the final executive summary report.
+- DO NOT include any preamble, role summaries, outline notes, scratchpad text, prompt repetition, chain-of-thought, or meta-commentary (such as "Role:", "Task:", "Input:", "Output format:", "Focus on:", "Section 1:", "To: Google Photos Leadership").
+- Start directly with line 1 being: "# Executive Summary: User Retrieval Friction & Memory Cognitive Load".
+
+REQUIRED REPORT STRUCTURE:
+# Executive Summary: User Retrieval Friction & Memory Cognitive Load
+
+### 1. Direct Answer & Retrieval Friction
+Synthesize the primary categories of photos users struggle to retrieve, citing specific user quotes as evidence.
+
+### 2. Memory Anchor Analysis
+Provide a Markdown table comparing:
+- What Users Remember (The Emotional / Intentional Anchor)
+- What Users Forget (The Technical / Structural Gap)
+
+### 3. Strategic Opportunity Pillars
+Detail 3 actionable, high-impact product initiatives for Google Photos to solve these friction points.
 """
                 with st.spinner("Gemini is analyzing corpus evidence..."):
-                    # Build list of active candidate models
                     candidate_models = []
                     try:
                         for m in genai.list_models():
@@ -203,8 +231,8 @@ Provide a structured, executive summary highlighting:
                             continue
 
                     if res_text:
-                        st.markdown(f"### 💡 Gemini AI Insight Synthesis (`{used_model}`)")
-                        st.write(res_text)
+                        st.caption(f"Powered by Gemini (`{used_model}`)")
+                        st.markdown(res_text)
                     else:
                         st.error(f"❌ Gemini API Error: {str(last_error)}")
             except Exception as e:
