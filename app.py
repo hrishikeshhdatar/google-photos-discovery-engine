@@ -148,7 +148,7 @@ with tab1:
 
     if st.button("Generate AI Synthesis"):
         if not api_key:
-            st.info("💡 **Corpus Evidence Synthesis (Heuristic Mode):**")
+            st.warning("⚠️ No Gemini API Key detected in Streamlit secrets. Showing static heuristic summary:")
             st.markdown("""
             * **Primary Struggling Photo Types:** Screenshots, document scans/receipts, and milestone event photos from 3+ years ago.
             * **What Users Remember:** Salient visual anchors (e.g., *'red jacket'*, *'beach trip'*), broad timeframes, or people present.
@@ -173,32 +173,33 @@ Provide a structured, executive summary highlighting:
 3. Strategic Opportunity for Google Photos.
 """
                 with st.spinner("Gemini is analyzing corpus evidence..."):
-                    # Fallback list across active Gemini models
-                    candidate_models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.0-pro']
-                    res_text = None
-                    
-                    for m_name in candidate_models:
-                        try:
-                            model = genai.GenerativeModel(m_name)
-                            res = model.generate_content(prompt)
-                            if res and hasattr(res, 'text') and res.text:
-                                res_text = res.text
+                    # Auto-discover active models available on this API key
+                    chosen_model = 'gemini-1.5-flash'
+                    try:
+                        all_m = list(genai.list_models())
+                        supported = [
+                            m.name for m in all_m 
+                            if 'generateContent' in getattr(m, 'supported_generation_methods', [])
+                        ]
+                        for m_name in supported:
+                            if 'flash' in m_name.lower():
+                                chosen_model = m_name
                                 break
-                        except Exception:
-                            continue
+                        if chosen_model not in supported and supported:
+                            chosen_model = supported[0]
+                    except Exception:
+                        pass
 
-                    if res_text:
-                        st.markdown("### 💡 Gemini AI Insight Synthesis")
-                        st.write(res_text)
+                    model = genai.GenerativeModel(chosen_model)
+                    res = model.generate_content(prompt)
+                    
+                    if res and hasattr(res, 'text') and res.text:
+                        st.markdown(f"### 💡 Gemini AI Insight Synthesis (`{chosen_model}`)")
+                        st.write(res.text)
                     else:
-                        st.warning("Gemini models busy. Displaying default synthesis:")
-                        st.markdown("""
-                        * **Primary Struggling Photo Types:** Screenshots, document scans/receipts, and milestone event photos from 3+ years ago.
-                        * **What Users Remember:** Salient visual anchors (e.g., *'red jacket'*, *'beach trip'*), broad timeframes, or people present.
-                        * **What Users Forget:** Precise timestamps, exact folder structures, or original file tags.
-                        """)
+                        st.warning("No text returned from Gemini model response.")
             except Exception as e:
-                st.error(f"AI Synthesis error: {e}")
+                st.error(f"❌ Gemini API Error: {str(e)}")
 
 # -----------------------------------------------------------------------------
 # TAB 2: OPPORTUNITY MATRIX & TAXONOMY
