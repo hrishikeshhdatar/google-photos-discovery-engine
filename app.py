@@ -126,7 +126,7 @@ st.sidebar.metric("Retrieval Issues Processed", f"{len(retrieval_df):,}")
 if api_key:
     st.sidebar.success("⚡ Gemini AI Engine: Online")
 else:
-    st.sidebar.warning("⚠️️ Gemini AI Engine: Offline Mode")
+    st.sidebar.warning("⚠️ Gemini AI Engine: Offline Mode")
 
 # Navigation Tabs
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -150,17 +150,17 @@ with tab1:
         if not api_key:
             st.warning("⚠️ No Gemini API Key detected in Streamlit secrets. Showing static heuristic summary:")
             st.markdown("""
-            ### Executive Summary: User Retrieval Friction & Memory Cognitive Load
+            # Executive Summary: User Retrieval Friction & Memory Cognitive Load
             
-            #### 1. Direct Answer
+            ### 1. Direct Answer
             * **Primary Struggling Photo Types:** Screenshots, document scans/receipts, and milestone event photos from 3+ years ago.
             * **Search Formulation Behavior:** Users input natural language descriptions rather than structured metadata filters.
             
-            #### 2. Memory Anchor Analysis
+            ### 2. Memory Anchor Analysis
             * **What Users Remember:** Salient visual anchors (e.g., *'red jacket'*, *'beach trip'*), broad timeframes, or people present.
             * **What Users Forget:** Precise timestamps, exact folder structures, or original file tags.
             
-            #### 3. Strategic Opportunity
+            ### 3. Strategic Opportunity
             * Fix core semantic search indexing failures.
             * De-clutter AI recommendations to prioritize chronological retrieval.
             * Improve device vs. cloud storage clarity.
@@ -172,7 +172,6 @@ with tab1:
                 
                 sample_text = "\n".join(retrieval_df['full_text'].sample(min(30, len(retrieval_df))).tolist())
                 
-                # Strict prompt eliminating scratchpads, outlines, and role commentary
                 prompt = f"""You are a Principal Product Manager for Google Photos.
 
 TASK:
@@ -182,10 +181,9 @@ Synthesize the following real user feedback to answer this research question:
 USER FEEDBACK CONTEXT:
 {sample_text}
 
-CRITICAL OUTPUT INSTRUCTIONS:
-- Output ONLY the final executive summary report.
-- DO NOT include any preamble, role summaries, outline notes, scratchpad text, prompt repetition, chain-of-thought, or meta-commentary (such as "Role:", "Task:", "Input:", "Output format:", "Focus on:", "Section 1:", "To: Google Photos Leadership").
-- Start directly with line 1 being: "# Executive Summary: User Retrieval Friction & Memory Cognitive Load".
+CRITICAL INSTRUCTION:
+Do not include any scratchpad notes, bullet point analysis, planning text, or preamble. 
+Start your response immediately with the header "# Executive Summary: User Retrieval Friction & Memory Cognitive Load".
 
 REQUIRED REPORT STRUCTURE:
 # Executive Summary: User Retrieval Friction & Memory Cognitive Load
@@ -207,7 +205,9 @@ Detail 3 actionable, high-impact product initiatives for Google Photos to solve 
                         for m in genai.list_models():
                             if 'generateContent' in getattr(m, 'supported_generation_methods', []):
                                 clean_name = m.name.replace('models/', '')
-                                candidate_models.append(clean_name)
+                                # Exclude Gemma models to avoid scratchpad leaks
+                                if 'gemma' not in clean_name.lower():
+                                    candidate_models.append(clean_name)
                     except Exception:
                         pass
 
@@ -231,6 +231,14 @@ Detail 3 actionable, high-impact product initiatives for Google Photos to solve 
                             continue
 
                     if res_text:
+                        # PROGRAMMATIC CLEANUP: Strip out any preamble or scratchpad leakage
+                        if "# Executive Summary" in res_text:
+                            res_text = "# Executive Summary" + res_text.split("# Executive Summary", 1)[1]
+                        elif "Executive Summary:" in res_text:
+                            res_text = "# Executive Summary:" + res_text.split("Executive Summary:", 1)[1]
+                        elif "1. Direct Answer" in res_text:
+                            res_text = "# Executive Summary: User Retrieval Friction & Memory Cognitive Load\n\n### " + "1. Direct Answer" + res_text.split("1. Direct Answer", 1)[1]
+
                         st.caption(f"Powered by Gemini (`{used_model}`)")
                         st.markdown(res_text)
                     else:
