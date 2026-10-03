@@ -95,7 +95,7 @@ st.markdown("""
         background-color: #1E293B;
         border: 1px solid #334155 !important;
         border-radius: 6px !important;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
     }
 
     /* Primary Buttons */
@@ -264,9 +264,9 @@ def load_and_analyze_corpus():
 df = load_and_analyze_corpus()
 
 # -----------------------------------------------------------------------------
-# PLOTLY HORIZONTAL BAR CHART HELPER
+# PLOTLY HORIZONTAL BAR CHART HELPER (FIXED LABEL MARGINS & AUTO-MARGIN)
 # -----------------------------------------------------------------------------
-def render_horizontal_bar_chart(series_data, x_label="Mentions", height=300):
+def render_horizontal_bar_chart(series_data, x_label="Mentions", height=320):
     chart_df = series_data.reset_index()
     chart_df.columns = ['category', 'count']
     total_val = chart_df['count'].sum()
@@ -294,7 +294,7 @@ def render_horizontal_bar_chart(series_data, x_label="Mentions", height=300):
     )
     
     fig.update_layout(
-        margin=dict(l=10, r=45, t=10, b=30),
+        margin=dict(l=220, r=50, t=10, b=30),  # Expanded left margin to prevent truncation
         height=height,
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
@@ -308,6 +308,7 @@ def render_horizontal_bar_chart(series_data, x_label="Mentions", height=300):
         yaxis=dict(
             title='',
             showgrid=False,
+            automargin=True,  # Automatically calculates padding for long y-axis titles
             tickfont=dict(color='#F8FAFC', size=12, family='Inter')
         )
     )
@@ -316,7 +317,6 @@ def render_horizontal_bar_chart(series_data, x_label="Mentions", height=300):
 # -----------------------------------------------------------------------------
 # 3. HEADER & SIDEBAR NAVIGATION
 # -----------------------------------------------------------------------------
-# Clean Page Header
 st.markdown("""
 <div class="app-header">
     <div class="app-title">Google Photos Search Insights Engine</div>
@@ -478,7 +478,7 @@ Detail 3 actionable, high-impact product initiatives for Google Photos to solve 
                 st.error(f"Configuration Error: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# TAB 2: PRIORITIES (OPPORTUNITY MATRIX & COMPARATOR)
+# TAB 2: PRIORITIES (STACKED LAYOUT + SEARCH CATEGORY DEFINITIONS)
 # -----------------------------------------------------------------------------
 with tab2:
     st.markdown("<div class=\"section-title\">What's going wrong in search, and what to fix first</div>", unsafe_allow_html=True)
@@ -501,56 +501,66 @@ with tab2:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Grid Split: Horizontal Chart + Priorities Table
-    col_chart, col_table = st.columns([1.35, 1.0])
-    
-    with col_chart:
-        with st.container(border=True):
-            st.markdown("<div class=\"section-title\">Search Issue Distribution</div>", unsafe_allow_html=True)
-            st.markdown("<div class=\"section-caption\">Total mentions per search friction category.</div>", unsafe_allow_html=True)
-            fig_cats = render_horizontal_bar_chart(category_counts, x_label="Mentions", height=280)
-            st.plotly_chart(fig_cats, use_container_width=True)
+    # 1. Full-width Distribution Chart
+    with st.container(border=True):
+        st.markdown("<div class=\"section-title\">Search Issue Distribution</div>", unsafe_allow_html=True)
+        st.markdown("<div class=\"section-caption\">Total mentions per search friction category across user feedback.</div>", unsafe_allow_html=True)
+        fig_cats = render_horizontal_bar_chart(category_counts, x_label="Mentions", height=320)
+        st.plotly_chart(fig_cats, use_container_width=True)
 
-    with col_table:
-        with st.container(border=True):
-            st.markdown("<div class=\"section-title\">Fix-First Priority Score</div>", unsafe_allow_html=True)
-            st.markdown("<div class=\"section-caption\">Priority = volume share × frustration severity rating.</div>", unsafe_allow_html=True)
-            
-            opp_data = []
-            for cat, group in retrieval_df.groupby('problem_category'):
-                count = len(group)
-                pct = (count / total_retrieval) * 100
-                scores = pd.to_numeric(group['user_score'], errors='coerce').dropna()
-                avg_score = scores.mean() if not scores.empty else 2.5
-                
-                friction_factor = 1.5
-                if not scores.empty and avg_score <= 5.0:
-                    friction_factor = max(1.0, 5.0 - avg_score)
-                
-                raw_opp_score = pct * friction_factor
-                opp_data.append({
-                    "Search Issue": cat,
-                    "Share": pct / 100.0,
-                    "Raw Score": raw_opp_score
-                })
-                
-            opp_df = pd.DataFrame(opp_data)
-            max_raw = opp_df['Raw Score'].max() if not opp_df.empty else 1
-            opp_df['Priority'] = (opp_df['Raw Score'] / max_raw) * 100
-            opp_df = opp_df.drop(columns=['Raw Score']).sort_values(by='Priority', ascending=False)
-            
-            st.dataframe(
-                opp_df,
-                hide_index=True,
-                use_container_width=True,
-                column_config={
-                    "Search Issue": st.column_config.TextColumn("Search Issue", width="large"),
-                    "Share": st.column_config.ProgressColumn("Share of Issues", format="%.1f%%", min_value=0, max_value=1),
-                    "Priority": st.column_config.ProgressColumn("Fix Priority", format="%.0f / 100", min_value=0, max_value=100)
-                }
-            )
+    # 2. Search Issue Glossary Expander (DEFINITIONS ADDED)
+    with st.expander("📖 Guide: What do these 6 Search Categories mean?", expanded=False):
+        st.markdown("""
+        * **Temporal / Milestone Ambiguity:** User searches that rely on approximate dates, timeframes, or life events (e.g., *"photos from 3 years ago"*, *"wedding 2019"*). Failure happens when timestamps are wrong or chronological indexing fails.
+        * **General Retrieval Friction:** Broad, unclassified search failures where photos are missing, hidden, or unavailable despite normal scrolling and basic keywords.
+        * **Relational & Person Context:** Queries targeting specific individuals, family members, or friends (e.g., *"baby photos"*, *"untagged faces"*). Failure happens when face-tagging or grouping breaks.
+        * **Spatial & Event Context:** Searches based on locations, cities, or organized trips (e.g., *"trip to Japan"*, *"beach vacation"*). Failure happens when geotags or event clustering are inaccurate.
+        * **Visual & Attribute Matching:** Keyword searches for specific objects, colors, or visual items (e.g., *"red shirt"*, *"dog"*, *"car"*). Failure occurs when computer vision model indexing misses key objects.
+        * **Document / OCR & Text Retrieval:** Searches for embedded text inside screenshots, receipts, notes, or scanned documents. Failure occurs when Optical Character Recognition (OCR) fails to index image text.
+        """)
 
-    # Side-by-Side Comparator
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # 3. Full-width Priority Table
+    with st.container(border=True):
+        st.markdown("<div class=\"section-title\">Fix-First Priority Score</div>", unsafe_allow_html=True)
+        st.markdown("<div class=\"section-caption\">Priority = volume share × frustration severity rating.</div>", unsafe_allow_html=True)
+        
+        opp_data = []
+        for cat, group in retrieval_df.groupby('problem_category'):
+            count = len(group)
+            pct = (count / total_retrieval) * 100
+            scores = pd.to_numeric(group['user_score'], errors='coerce').dropna()
+            avg_score = scores.mean() if not scores.empty else 2.5
+            
+            friction_factor = 1.5
+            if not scores.empty and avg_score <= 5.0:
+                friction_factor = max(1.0, 5.0 - avg_score)
+            
+            raw_opp_score = pct * friction_factor
+            opp_data.append({
+                "Search Issue": cat,
+                "Share": pct / 100.0,
+                "Raw Score": raw_opp_score
+            })
+            
+        opp_df = pd.DataFrame(opp_data)
+        max_raw = opp_df['Raw Score'].max() if not opp_df.empty else 1
+        opp_df['Priority'] = (opp_df['Raw Score'] / max_raw) * 100
+        opp_df = opp_df.drop(columns=['Raw Score']).sort_values(by='Priority', ascending=False)
+        
+        st.dataframe(
+            opp_df,
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                "Search Issue": st.column_config.TextColumn("Search Issue", width="large"),
+                "Share": st.column_config.ProgressColumn("Share of Issues", format="%.1f%%", min_value=0, max_value=1, width="medium"),
+                "Priority": st.column_config.ProgressColumn("Fix Priority", format="%.0f / 100", min_value=0, max_value=100, width="medium")
+            }
+        )
+
+    # 4. Side-by-Side Comparator
     st.markdown("<br>", unsafe_allow_html=True)
     with st.container(border=True):
         st.markdown("<div class=\"section-title\">Side-by-Side Issue Comparator</div>", unsafe_allow_html=True)
@@ -589,49 +599,63 @@ with tab2:
                         st.caption(f"\"...{df_b.iloc[0]['full_text'][:140]}...\"")
 
 # -----------------------------------------------------------------------------
-# TAB 3: MEMORY PATTERNS (MEMORY ANCHOR ANALYTICS)
+# TAB 3: MEMORY PATTERNS (STACKED VERTICAL TABLES — ZERO SCROLLING)
 # -----------------------------------------------------------------------------
 with tab3:
     st.markdown("<div class=\"section-title\">What people remember vs. what they forget</div>", unsafe_allow_html=True)
     st.markdown("<div class=\"section-caption\">Mapping emotional and visual cues against lost technical metadata.</div>", unsafe_allow_html=True)
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        with st.container(border=True):
-            st.markdown("<div class=\"section-title\">Details people remember</div>", unsafe_allow_html=True)
-            st.markdown("<div class=\"section-caption\">Emotional, visual, and relational memory cues.</div>", unsafe_allow_html=True)
-            
-            rem_counts = retrieval_df['remembered_anchor'].value_counts().reset_index()
-            rem_counts.columns = ['Memory Cue', 'Mentions']
-            
-            st.dataframe(
-                rem_counts,
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "Memory Cue": st.column_config.TextColumn("Memory Cue", width="large"),
-                    "Mentions": st.column_config.ProgressColumn("Mentions", format="%d", min_value=0, max_value=int(rem_counts['Mentions'].max()))
-                }
-            )
+    # 1. Details People Remember (Full Width)
+    with st.container(border=True):
+        st.markdown("<div class=\"section-title\">Details people remember</div>", unsafe_allow_html=True)
+        st.markdown("<div class=\"section-caption\">Emotional, visual, and relational memory cues.</div>", unsafe_allow_html=True)
+        
+        rem_counts = retrieval_df['remembered_anchor'].value_counts().reset_index()
+        rem_counts.columns = ['Memory Cue', 'Mentions']
+        max_rem = int(rem_counts['Mentions'].max()) if not rem_counts.empty else 100
+        
+        st.dataframe(
+            rem_counts,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Memory Cue": st.column_config.TextColumn("Memory Cue", width="large"),
+                "Mentions": st.column_config.ProgressColumn(
+                    "Total Mentions", 
+                    format="%d", 
+                    min_value=0, 
+                    max_value=max_rem,
+                    width="medium"
+                )
+            }
+        )
 
-    with col2:
-        with st.container(border=True):
-            st.markdown("<div class=\"section-title\">Details people forget</div>", unsafe_allow_html=True)
-            st.markdown("<div class=\"section-caption\">Technical metadata, exact dates, and folder structures.</div>", unsafe_allow_html=True)
-            
-            for_counts = retrieval_df['forgotten_anchor'].value_counts().reset_index()
-            for_counts.columns = ['Forgotten Detail', 'Mentions']
-            
-            st.dataframe(
-                for_counts,
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "Forgotten Detail": st.column_config.TextColumn("Forgotten Detail", width="large"),
-                    "Mentions": st.column_config.ProgressColumn("Mentions", format="%d", min_value=0, max_value=int(for_counts['Mentions'].max()))
-                }
-            )
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # 2. Details People Forget (Full Width)
+    with st.container(border=True):
+        st.markdown("<div class=\"section-title\">Details people forget</div>", unsafe_allow_html=True)
+        st.markdown("<div class=\"section-caption\">Technical metadata, exact dates, and folder structures.</div>", unsafe_allow_html=True)
+        
+        for_counts = retrieval_df['forgotten_anchor'].value_counts().reset_index()
+        for_counts.columns = ['Forgotten Detail', 'Mentions']
+        max_for = int(for_counts['Mentions'].max()) if not for_counts.empty else 100
+        
+        st.dataframe(
+            for_counts,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Forgotten Detail": st.column_config.TextColumn("Forgotten Detail", width="large"),
+                "Mentions": st.column_config.ProgressColumn(
+                    "Total Mentions", 
+                    format="%d", 
+                    min_value=0, 
+                    max_value=max_for,
+                    width="medium"
+                )
+            }
+        )
 
 # -----------------------------------------------------------------------------
 # TAB 4: SEARCH EVIDENCE (EVIDENCE & QUERY FORMULATION)
@@ -645,7 +669,7 @@ with tab4:
         st.markdown("<div class=\"section-caption\">Frequency of search methods used by users attempting photo retrieval.</div>", unsafe_allow_html=True)
         
         strategy_counts = retrieval_df['search_strategy'].value_counts()
-        fig_strat = render_horizontal_bar_chart(strategy_counts, x_label="Posts Using Strategy", height=240)
+        fig_strat = render_horizontal_bar_chart(strategy_counts, x_label="Posts Using Strategy", height=280)
         st.plotly_chart(fig_strat, use_container_width=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
