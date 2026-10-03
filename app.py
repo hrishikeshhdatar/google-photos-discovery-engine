@@ -11,7 +11,20 @@ st.set_page_config(
 )
 
 # -----------------------------------------------------------------------------
-# 1. DATA INGESTION & HEURISTIC ENGINE
+# 1. SECURE API KEY RETRIEVAL
+# -----------------------------------------------------------------------------
+api_key = None
+try:
+    if "GEMINI_API_KEY" in st.secrets:
+        api_key = st.secrets["GEMINI_API_KEY"]
+except Exception:
+    pass
+
+if not api_key:
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+
+# -----------------------------------------------------------------------------
+# 2. DATA INGESTION & HEURISTIC ENGINE
 # -----------------------------------------------------------------------------
 @st.cache_data
 def load_and_analyze_corpus():
@@ -95,7 +108,7 @@ def load_and_analyze_corpus():
 df = load_and_analyze_corpus()
 
 # -----------------------------------------------------------------------------
-# 2. STREAMLIT INTERFACE
+# 3. STREAMLIT INTERFACE
 # -----------------------------------------------------------------------------
 st.title("🧠 Google Photos AI Discovery Engine")
 st.caption("Large-scale user feedback engine mapping memory anchor decay, search formulation strategies, and opportunity prioritization.")
@@ -110,6 +123,11 @@ st.sidebar.metric("Total User Posts Ingested", f"{len(df):,}")
 retrieval_df = df[df['is_retrieval_issue'] == True]
 st.sidebar.metric("Retrieval Issues Processed", f"{len(retrieval_df):,}")
 
+if api_key:
+    st.sidebar.success("⚡ Gemini AI Engine: Online")
+else:
+    st.sidebar.warning("⚠️ Gemini AI Engine: Offline Mode")
+
 # Navigation Tabs
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🤖 Gemini AI Synthesizer",
@@ -120,20 +138,17 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 ])
 
 # -----------------------------------------------------------------------------
-# TAB 1: GEMINI AI SYNTHESIZER (RAG-Style Intelligence)
+# TAB 1: GEMINI AI SYNTHESIZER
 # -----------------------------------------------------------------------------
 with tab1:
     st.header("🤖 Live Gemini Discovery Agent")
     st.write("Query the ingested dataset using Gemini to synthesize user behavior, memory gaps, and opportunity areas.")
     
-    api_key = st.text_input("Enter Google Gemini API Key (optional for live AI synthesis):", type="password")
     user_query = st.text_area("Ask a research question about the corpus:", value="What kinds of old photos do users struggle to retrieve, and what information have they forgotten?")
 
     if st.button("Generate AI Synthesis"):
         if not api_key:
-            st.warning("⚠️ Running in offline heuristic mode. Enter a Gemini API Key above to run live LLM synthesis.")
-            st.markdown("### AI Discovery Summary (Corpus Evidence)")
-            st.write(f"Based on analysis of **{len(retrieval_df):,}** feedback records:")
+            st.info("💡 **Corpus Evidence Synthesis (Heuristic Mode):**")
             st.markdown("""
             * **Primary Struggling Photo Types:** Screenshots, document scans/receipts, and milestone event photos from 3+ years ago.
             * **What Users Remember:** Salient visual anchors (e.g., *'red jacket'*, *'beach trip'*), broad timeframes, or people present.
@@ -146,7 +161,6 @@ with tab1:
                 genai.configure(api_key=api_key)
                 model = genai.GenerativeModel('gemini-2.5-flash')
                 
-                # Context Retrieval (RAG Sample)
                 sample_text = "\n".join(retrieval_df['full_text'].sample(min(30, len(retrieval_df))).tolist())
                 prompt = f"""You are a Principal Product Manager for Google Photos.
 Synthesize the following real user feedback to answer this question: '{user_query}'
@@ -159,19 +173,18 @@ Provide a structured, executive summary highlighting:
 2. Memory Anchor Analysis (What users remember vs. forgot).
 3. Strategic Opportunity for Google Photos.
 """
-                with st.spinner("Gemini is analyzing user feedback..."):
+                with st.spinner("Gemini is analyzing corpus evidence..."):
                     response = model.generate_content(prompt)
                     st.markdown("### 💡 Gemini AI Insight Synthesis")
                     st.write(response.text)
             except Exception as e:
-                st.error(f"AI Synthesis failed: {e}")
+                st.error(f"AI Synthesis error: {e}")
 
 # -----------------------------------------------------------------------------
 # TAB 2: OPPORTUNITY MATRIX & TAXONOMY
 # -----------------------------------------------------------------------------
 with tab2:
     st.header("Retrieval Failure Mode Taxonomy & Opportunity Scoring")
-    
     category_counts = retrieval_df['problem_category'].value_counts()
     
     col1, col2 = st.columns([2, 1])
@@ -187,7 +200,7 @@ with tab2:
         total = len(retrieval_df)
         for cat, count in category_counts.items():
             pct = (count / total) * 100
-            opp_score = pct * 1.2 # Friction Multiplier
+            opp_score = pct * 1.2
             opp_data.append({
                 "Failure Mode": cat,
                 "Volume Share": f"{pct:.1f}%",
@@ -200,8 +213,6 @@ with tab2:
 # -----------------------------------------------------------------------------
 with tab3:
     st.header("Memory Decay & Anchor Mapping")
-    st.write("Comparing salient user memory anchors against forgotten system metadata.")
-    
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("🟢 Remembered Context (Salient)")
