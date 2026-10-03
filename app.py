@@ -295,10 +295,29 @@ with tab4:
     selected_cat = st.selectbox("Filter Failure Mode:", options=retrieval_df['problem_category'].unique())
     filtered_ev = retrieval_df[retrieval_df['problem_category'] == selected_cat]
     
-    st.write(f"Showing **{len(filtered_ev):,}** entries for **{selected_cat}**:")
-    for idx, row in filtered_ev.head(5).iterrows():
-        with st.expander(f"Source: {row.get('source_platform', 'Public Feedback')} | Score: {row.get('user_score', 1)}"):
-            st.write(f"\"{row['full_text']}\"")
+    total_count = len(filtered_ev)
+    
+    if total_count == 0:
+        st.info("No entries found for this failure mode.")
+    else:
+        # Dynamic slider allowing full expansion up to all total entries
+        display_limit = st.slider(
+            "Number of entries to display:", 
+            min_value=5, 
+            max_value=max(5, total_count), 
+            value=min(20, total_count), 
+            step=5
+        )
+        
+        st.write(f"Displaying **{min(display_limit, total_count)}** of **{total_count:,}** entries for **{selected_cat}**:")
+        
+        for idx, row in filtered_ev.head(display_limit).iterrows():
+            score_val = row.get('user_score')
+            score_str = f"{score_val:.1f}" if pd.notna(score_val) else "N/A"
+            source_platform = row.get('source_platform', 'Public Feedback')
+            
+            with st.expander(f"Source: {source_platform} | Score: {score_str}"):
+                st.write(f"\"{row['full_text']}\"")
 
 # -----------------------------------------------------------------------------
 # TAB 5: RAW CORPUS EXPLORER
