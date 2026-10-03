@@ -42,7 +42,7 @@ st.markdown("""
         background-color: #1E293B;
     }
 
-    /* Metric Cards */
+    /* Metric Cards - Fixed Text Overflow & Truncation */
     div[data-testid="stMetric"] {
         background-color: #1E293B;
         border: 1px solid #334155;
@@ -58,9 +58,12 @@ st.markdown("""
         letter-spacing: 0.05em;
     }
     div[data-testid="stMetricValue"] {
-        font-size: 1.5rem !important;
+        font-size: 1.25rem !important;
         font-weight: 700 !important;
         color: #F8FAFC !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        line-height: 1.3 !important;
     }
 
     /* Tabs Styling */
@@ -478,7 +481,7 @@ Detail 3 actionable, high-impact product initiatives for Google Photos to solve 
                 st.error(f"Configuration Error: {str(e)}")
 
 # -----------------------------------------------------------------------------
-# TAB 2: PRIORITIES (STACKED LAYOUT + SEARCH CATEGORY DEFINITIONS)
+# TAB 2: PRIORITIES (BALANCED KPI COLUMNS & UNTRUNCATED TEXT)
 # -----------------------------------------------------------------------------
 with tab2:
     st.markdown("<div class=\"section-title\">What's going wrong in search, and what to fix first</div>", unsafe_allow_html=True)
@@ -491,7 +494,8 @@ with tab2:
     top_issue = category_counts.index[0] if not category_counts.empty else "N/A"
     top_share = (category_counts.iloc[0] / total_retrieval * 100) if not category_counts.empty else 0
     
-    kpi1, kpi2, kpi3 = st.columns(3)
+    # Adjusted column proportions [1, 1.6, 1] to give the middle card plenty of width
+    kpi1, kpi2, kpi3 = st.columns([1, 1.6, 1])
     with kpi1:
         st.metric("Total Search Complaints", f"{total_retrieval:,}")
     with kpi2:
@@ -508,7 +512,7 @@ with tab2:
         fig_cats = render_horizontal_bar_chart(category_counts, x_label="Mentions", height=320)
         st.plotly_chart(fig_cats, use_container_width=True)
 
-    # 2. Search Issue Glossary Expander (DEFINITIONS ADDED)
+    # 2. Search Issue Glossary Expander
     with st.expander("📖 Guide: What do these 6 Search Categories mean?", expanded=False):
         st.markdown("""
         * **Temporal / Milestone Ambiguity:** User searches that rely on approximate dates, timeframes, or life events (e.g., *"photos from 3 years ago"*, *"wedding 2019"*). Failure happens when timestamps are wrong or chronological indexing fails.
@@ -599,7 +603,7 @@ with tab2:
                         st.caption(f"\"...{df_b.iloc[0]['full_text'][:140]}...\"")
 
 # -----------------------------------------------------------------------------
-# TAB 3: MEMORY PATTERNS (STACKED VERTICAL TABLES — ZERO SCROLLING)
+# TAB 3: MEMORY PATTERNS
 # -----------------------------------------------------------------------------
 with tab3:
     st.markdown("<div class=\"section-title\">What people remember vs. what they forget</div>", unsafe_allow_html=True)
@@ -658,7 +662,7 @@ with tab3:
         )
 
 # -----------------------------------------------------------------------------
-# TAB 4: SEARCH EVIDENCE (EVIDENCE & QUERY FORMULATION)
+# TAB 4: SEARCH EVIDENCE
 # -----------------------------------------------------------------------------
 with tab4:
     st.markdown("<div class=\"section-title\">How people search when memory fails</div>", unsafe_allow_html=True)
@@ -698,7 +702,6 @@ with tab4:
                 score_val = row.get('user_score')
                 source_platform = str(row.get('source_platform', 'Public Feedback'))
                 
-                # Format ratings/upvotes dynamically
                 score_tag = ""
                 if pd.notna(score_val):
                     try:
@@ -718,7 +721,7 @@ with tab4:
                     st.write(f"\"{row['full_text']}\"")
 
 # -----------------------------------------------------------------------------
-# TAB 5: ALL DATA (RAW CORPUS EXPLORER)
+# TAB 5: ALL DATA
 # -----------------------------------------------------------------------------
 with tab5:
     st.markdown("<div class=\"section-title\">Unified Feedback Dataset</div>", unsafe_allow_html=True)
@@ -731,7 +734,6 @@ with tab5:
         if search_q:
             disp = disp[disp['full_text'].str.contains(search_q, case=False, na=False)]
             
-        # Display layer column renaming
         disp_table = disp[['full_text', 'problem_category', 'search_strategy', 'source_platform']].copy()
         disp_table.columns = ['User Feedback Text', 'Search Issue Category', 'Search Strategy', 'Source Platform']
         
