@@ -32,11 +32,14 @@ def load_and_analyze_corpus():
     if not csv_files:
         return pd.DataFrame()
         
+    # Expanded column mapping to catch various rating / score variations
     column_mapping = {
         'title': 'title', 'post_title': 'title', 'subject': 'title',
         'selftext': 'content', 'text': 'content', 'body': 'content', 
         'review_text': 'content', 'content': 'content',
-        'rating': 'user_score', 'score': 'user_score', 'user_score': 'user_score'
+        'rating': 'user_score', 'score': 'user_score', 'user_score': 'user_score',
+        'upvotes': 'user_score', 'ups': 'user_score', 'stars': 'user_score',
+        'likes': 'user_score', 'thumbs_up': 'user_score'
     }
     
     dfs = []
@@ -300,7 +303,7 @@ with tab4:
     if total_count == 0:
         st.info("No entries found for this failure mode.")
     else:
-        # Dynamic slider allowing full expansion up to all total entries
+        # Dynamic limit slider allowing full expansion up to all entries
         display_limit = st.slider(
             "Number of entries to display:", 
             min_value=5, 
@@ -313,10 +316,25 @@ with tab4:
         
         for idx, row in filtered_ev.head(display_limit).iterrows():
             score_val = row.get('user_score')
-            score_str = f"{score_val:.1f}" if pd.notna(score_val) else "N/A"
-            source_platform = row.get('source_platform', 'Public Feedback')
+            source_platform = str(row.get('source_platform', 'Public Feedback'))
             
-            with st.expander(f"Source: {source_platform} | Score: {score_str}"):
+            # Clean context-aware score formatting
+            score_tag = ""
+            if pd.notna(score_val):
+                try:
+                    num_val = float(score_val)
+                    if 'App Store' in source_platform or 'Play Store' in source_platform:
+                        score_tag = f" | ⭐ {num_val:.1f}/5.0"
+                    elif 'Reddit' in source_platform:
+                        score_tag = f" | ⬆️ {int(num_val)} upvotes"
+                    else:
+                        score_tag = f" | Score: {num_val:.1f}"
+                except (ValueError, TypeError):
+                    score_tag = ""
+
+            expander_title = f"Source: {source_platform}{score_tag}"
+            
+            with st.expander(expander_title):
                 st.write(f"\"{row['full_text']}\"")
 
 # -----------------------------------------------------------------------------
