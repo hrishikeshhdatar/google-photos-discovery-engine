@@ -16,13 +16,31 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Material Design 3 Design System Injection & Full Contrast Overrides
+# Force Streamlit frontend engine to Light Mode via JS state override
+st.components.v1.html("""
+<script>
+    const setLight = () => {
+        try {
+            const parentDoc = window.parent.document;
+            parentDoc.documentElement.setAttribute('data-theme', 'light');
+            parentDoc.body.setAttribute('data-theme', 'light');
+            window.parent.localStorage.setItem('stActiveTheme', '{"base":"light"}');
+        } catch (e) {
+            console.log("Theme initialized");
+        }
+    };
+    setLight();
+    setTimeout(setLight, 500);
+</script>
+""", height=0, width=0)
+
+# Material Design 3 Injection with Target CSS Overrides
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Text:wght@400;500&family=Roboto:wght@400;500;700&display=swap');
 
-    /* 1. FORCE STREAMLIT INTERNAL THEME VARIABLES TO LIGHT MODE */
-    :root, [data-testid="stAppViewContainer"], .stApp, [class*="stApp"] {
+    /* 1. FORCE STREAMLIT GLOBAL CSS VARIABLES TO LIGHT MODE */
+    :root, [data-testid="stAppViewContainer"], .stApp, [class*="stApp"], body {
         color-scheme: light !important;
         --background-color: #FFFFFF !important;
         --secondary-background-color: #F8F9FA !important;
@@ -30,13 +48,13 @@ st.markdown("""
         --primary-color: #1A73E8 !important;
     }
 
-    /* Hide Default Streamlit Chrome */
+    /* Hide Default Streamlit Chrome Header & Footer */
     header[data-testid="stHeader"], footer, #MainMenu {
         display: none !important;
         visibility: hidden !important;
     }
 
-    /* Canvas & Global Background */
+    /* Canvas & Global App Background */
     html, body, [data-testid="stAppViewContainer"], .stApp {
         background-color: #FFFFFF !important;
         color: #202124 !important;
@@ -44,7 +62,7 @@ st.markdown("""
         -webkit-font-smoothing: antialiased;
     }
 
-    /* Main Container Spacing */
+    /* Main Content Container Layout */
     .main .block-container {
         max-width: 1200px !important;
         padding-left: 32px !important;
@@ -145,12 +163,12 @@ st.markdown("""
         display: inline-block !important;
     }
 
-    /* Main Header Styling */
+    /* Header & Section Typography */
     .md-header-title {
         font-family: 'Google Sans', sans-serif !important;
         font-size: 32px !important;
         line-height: 40px !important;
-        font-weight: 400 !important;
+        font-weight: 500 !important;
         color: #202124 !important;
         margin: 0 !important;
     }
@@ -170,12 +188,11 @@ st.markdown("""
         margin-bottom: 24px !important;
     }
 
-    /* Section Titles */
     .md-section-title {
         font-family: 'Google Sans', sans-serif !important;
         font-size: 22px !important;
         line-height: 28px !important;
-        font-weight: 400 !important;
+        font-weight: 500 !important;
         color: #202124 !important;
         margin-bottom: 8px !important;
     }
@@ -213,20 +230,19 @@ st.markdown("""
         transition: background-color 150ms ease, color 150ms ease !important;
     }
 
-    /* Target ALL child text elements inside unselected tabs */
+    /* Explicit dark charcoal text on unselected tabs */
     button[data-baseweb="tab"] * {
-        color: #3C4043 !important; /* Visible dark charcoal text */
+        color: #3C4043 !important;
         font-weight: 500 !important;
         opacity: 1 !important;
     }
 
-    /* Tab Hover State */
     button[data-baseweb="tab"]:hover {
         background-color: #F1F3F4 !important;
     }
 
     button[data-baseweb="tab"]:hover * {
-        color: #1A73E8 !important; /* Primary blue on hover */
+        color: #1A73E8 !important;
     }
 
     /* Active / Selected Tab */
@@ -236,7 +252,7 @@ st.markdown("""
     }
 
     button[data-baseweb="tab"][aria-selected="true"] * {
-        color: #1A73E8 !important; /* Active tab blue */
+        color: #1A73E8 !important;
         font-weight: 600 !important;
     }
 
@@ -245,25 +261,22 @@ st.markdown("""
     }
 
     /* =========================================================
-       3. FIX BLACK DATAFRAMES & TABLES (st.dataframe)
+       3. DATAFRAME & TABLE CONTAINER (st.dataframe)
        ========================================================= */
     div[data-testid="stDataFrame"] {
-        background-color: #FFFFFF !important;
         border: 1px solid #DADCE0 !important;
         border-radius: 12px !important;
-        overflow: hidden !important;
+        background-color: #FFFFFF !important;
+        box-shadow: none !important;
     }
 
-    div[data-testid="stDataFrame"] *,
-    div[data-testid="stDataFrame"] [data-testid="stTable"] {
-        background-color: #FFFFFF !important;
-        color: #202124 !important;
+    div[data-testid="stDataFrame"] iframe {
+        border-radius: 12px !important;
     }
 
     /* =========================================================
-       4. FIX BLACK SELECTBOX DROPDOWNS (st.selectbox)
+       4. FIX SELECTBOX DROPDOWNS (st.selectbox)
        ========================================================= */
-    /* Selectbox Main Bar Container */
     div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
         border-radius: 8px !important;
@@ -334,7 +347,7 @@ st.markdown("""
         margin-bottom: 16px !important;
     }
 
-    /* Form Labels */
+    /* Form Labels & Inputs */
     div[data-testid="stTextArea"] label, 
     div[data-testid="stTextInput"] label, 
     div[data-testid="stSelectbox"] label, 
@@ -343,6 +356,13 @@ st.markdown("""
         font-weight: 500 !important;
         color: #202124 !important;
         margin-bottom: 8px !important;
+    }
+
+    div[data-testid="stTextInput"] input {
+        background-color: #FFFFFF !important;
+        color: #202124 !important;
+        border: 1px solid #DADCE0 !important;
+        border-radius: 8px !important;
     }
 
     .input-helper-text {
@@ -740,7 +760,7 @@ with tab2:
     top_issue = category_counts.index[0] if not category_counts.empty else "N/A"
     top_share = (category_counts.iloc[0] / total_retrieval * 100) if not category_counts.empty else 0
     
-    # 3 Equal-Height KPI Cards
+    # 3 KPI Cards
     kpi1, kpi2, kpi3 = st.columns(3, gap="medium")
     with kpi1:
         st.markdown(f"""
