@@ -204,9 +204,7 @@ st.markdown("""
         margin-bottom: 24px !important;
     }
 
-    /* =========================================================
-       2. FIX UNSELECTED TABS (st.tabs)
-       ========================================================= */
+    /* Navigation Tabs */
     div[data-testid="stTabs"] {
         margin-bottom: 24px !important;
     }
@@ -258,9 +256,7 @@ st.markdown("""
         background-color: #1A73E8 !important;
     }
 
-    /* =========================================================
-       3. NATIVE STREAMLIT BORDERED CONTAINERS AS CARDS
-       ========================================================= */
+    /* Container Cards */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #F8F9FA !important;
         border: 1px solid #DADCE0 !important;
@@ -270,9 +266,7 @@ st.markdown("""
         margin-bottom: 24px !important;
     }
 
-    /* =========================================================
-       4. DATAFRAME & TABLE VISIBILITY (st.dataframe)
-       ========================================================= */
+    /* Dataframe Tables */
     div[data-testid="stDataFrame"] {
         border: 1px solid #DADCE0 !important;
         border-radius: 8px !important;
@@ -280,9 +274,7 @@ st.markdown("""
         box-shadow: none !important;
     }
 
-    /* =========================================================
-       5. SELECTBOX DROPDOWNS (st.selectbox)
-       ========================================================= */
+    /* Selectbox Dropdowns */
     div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
         border-radius: 8px !important;
@@ -685,35 +677,28 @@ with tab1:
                 selected_samples = retrieval_df['full_text'].head(30).tolist()
                 sample_text = "\n".join([f"- {text}" for text in selected_samples])
                 
-                prompt = f"""You are a Principal Product Manager for Google Photos.
-
-TASK:
-Synthesize the following real user feedback to answer this research question:
-"{user_query}"
-
-USER FEEDBACK CONTEXT:
-{sample_text}
-
-CRITICAL INSTRUCTION:
-Do not include any scratchpad notes, bullet point analysis, planning text, or preamble. 
-Start your response immediately with the header "# Executive Summary: User Retrieval Friction & Memory Cognitive Load".
-
-REQUIRED REPORT STRUCTURE:
-# Executive Summary: User Retrieval Friction & Memory Cognitive Load
-
-### 1. Direct Answer & Retrieval Friction
-Synthesize the primary categories of photos users struggle to retrieve, citing specific user quotes as evidence.
-
-### 2. Memory Anchor Analysis
-Provide a Markdown table comparing:
-- What Users Remember (The Emotional / Intentional Anchor)
-- What Users Forget (The Technical / Structural Gap)
-
-### 3. Strategic Opportunity Pillars
-Detail 3 actionable, high-impact product initiatives for Google Photos to solve these friction points.
-"""
+                prompt = (
+                    "You are a Principal Product Manager for Google Photos.\n\n"
+                    f"TASK:\nSynthesize user feedback to answer: '{user_query}'\n\n"
+                    f"USER FEEDBACK CONTEXT:\n{sample_text}\n\n"
+                    "CRITICAL INSTRUCTION:\n"
+                    "Do not include any scratchpad notes, bullet point analysis, planning text, or preamble.\n"
+                    "Start your response immediately with '# Executive Summary: User Retrieval Friction & Memory Cognitive Load'.\n\n"
+                    "REQUIRED REPORT STRUCTURE:\n"
+                    "# Executive Summary: User Retrieval Friction & Memory Cognitive Load\n\n"
+                    "### 1. Direct Answer & Retrieval Friction\n"
+                    "Synthesize primary categories of photos users struggle to retrieve with user quote evidence.\n\n"
+                    "### 2. Memory Anchor Analysis\n"
+                    "Provide a Markdown table comparing:\n"
+                    "- What Users Remember (The Emotional / Intentional Anchor)\n"
+                    "- What Users Forget (The Technical / Structural Gap)\n\n"
+                    "### 3. Strategic Opportunity Pillars\n"
+                    "Detail 3 actionable product initiatives for Google Photos to solve these friction points.\n"
+                )
+                
                 with st.spinner("Generating summary..."):
-                    model = genai.GenerativeModel("gemini-1.5-flash")
+                    # Updated model to gemini-2.5-flash
+                    model = genai.GenerativeModel("gemini-2.5-flash")
                     res = model.generate_content(prompt)
                     if res and res.text:
                         res_text = res.text
@@ -807,10 +792,7 @@ with tab2:
             scores = pd.to_numeric(group['user_score'], errors='coerce').dropna()
             avg_score = scores.mean() if not scores.empty else 2.5
             
-            friction_factor = 1.5
-            if not scores.empty and avg_score <= 5.0:
-                friction_factor = max(1.0, 5.0 - avg_score)
-            
+            friction_factor = max(1.0, 5.0 - avg_score) if not scores.empty else 1.5
             raw_opp_score = pct * friction_factor
             opp_data.append({
                 "Search Issue": cat,
@@ -834,48 +816,6 @@ with tab2:
             }
         )
 
-    # Side-by-Side Comparator
-    st.markdown("<br>", unsafe_allow_html=True)
-    with st.container(border=True):
-        st.markdown("""
-        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Side-by-Side Issue Comparator</div>
-        <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Compare user memory anchors and search behavior across two problem areas.</div>
-        """, unsafe_allow_html=True)
-        
-        cats = list(retrieval_df['problem_category'].unique())
-        if len(cats) >= 2:
-            comp_col1, comp_col2 = st.columns(2)
-            with comp_col1:
-                cat_a = st.selectbox("Select Problem A:", options=cats, index=0)
-            with comp_col2:
-                cat_b = st.selectbox("Select Problem B:", options=cats, index=min(1, len(cats)-1))
-                
-            df_a = retrieval_df[retrieval_df['problem_category'] == cat_a]
-            df_b = retrieval_df[retrieval_df['problem_category'] == cat_b]
-            
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown(f"""
-                <div style="background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 8px; padding: 16px;">
-                    <div style="font-weight: 500; color: #202124;">{cat_a}</div>
-                    <div style="font-size: 12px; color: #5F6368; margin-bottom: 8px;">Volume: {(len(df_a)/total_retrieval)*100:.1f}% ({len(df_a):,} posts)</div>
-                    <div><b>Dominant Search:</b> {df_a['search_strategy'].mode()[0] if not df_a.empty else 'N/A'}</div>
-                    <div><b>Main Memory Cue:</b> {df_a['remembered_anchor'].mode()[0] if not df_a.empty else 'N/A'}</div>
-                    <div><b>Main Forgotten Detail:</b> {df_a['forgotten_anchor'].mode()[0] if not df_a.empty else 'N/A'}</div>
-                </div>
-                """, unsafe_allow_html=True)
-                    
-            with c2:
-                st.markdown(f"""
-                <div style="background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 8px; padding: 16px;">
-                    <div style="font-weight: 500; color: #202124;">{cat_b}</div>
-                    <div style="font-size: 12px; color: #5F6368; margin-bottom: 8px;">Volume: {(len(df_b)/total_retrieval)*100:.1f}% ({len(df_b):,} posts)</div>
-                    <div><b>Dominant Search:</b> {df_b['search_strategy'].mode()[0] if not df_b.empty else 'N/A'}</div>
-                    <div><b>Main Memory Cue:</b> {df_b['remembered_anchor'].mode()[0] if not df_b.empty else 'N/A'}</div>
-                    <div><b>Main Forgotten Detail:</b> {df_b['forgotten_anchor'].mode()[0] if not df_b.empty else 'N/A'}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
 # -----------------------------------------------------------------------------
 # TAB 3: MEMORY PATTERNS
 # -----------------------------------------------------------------------------
@@ -887,61 +827,19 @@ with tab3:
     </div>
     """, unsafe_allow_html=True)
     
-    # Details People Remember Table Card
     with st.container(border=True):
-        st.markdown("""
-        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Details people remember</div>
-        <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Emotional, visual, and relational memory cues.</div>
-        """, unsafe_allow_html=True)
-        
+        st.markdown('<div style="font-family: \'Google Sans\', sans-serif; font-size: 16px; font-weight: 500;">Details people remember</div>', unsafe_allow_html=True)
         rem_counts = retrieval_df['remembered_anchor'].value_counts().reset_index()
         rem_counts.columns = ['Memory Cue', 'Mentions']
-        max_rem = int(rem_counts['Mentions'].max()) if not rem_counts.empty else 100
-        
-        st.dataframe(
-            rem_counts,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Memory Cue": st.column_config.TextColumn("Memory Cue", width="large"),
-                "Mentions": st.column_config.ProgressColumn(
-                    "Total Mentions", 
-                    format="%d", 
-                    min_value=0, 
-                    max_value=max_rem,
-                    width="medium"
-                )
-            }
-        )
+        st.dataframe(rem_counts, use_container_width=True, hide_index=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Details People Forget Table Card
     with st.container(border=True):
-        st.markdown("""
-        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Details people forget</div>
-        <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Technical metadata, exact dates, and folder structures.</div>
-        """, unsafe_allow_html=True)
-        
+        st.markdown('<div style="font-family: \'Google Sans\', sans-serif; font-size: 16px; font-weight: 500;">Details people forget</div>', unsafe_allow_html=True)
         for_counts = retrieval_df['forgotten_anchor'].value_counts().reset_index()
         for_counts.columns = ['Forgotten Detail', 'Mentions']
-        max_for = int(for_counts['Mentions'].max()) if not for_counts.empty else 100
-        
-        st.dataframe(
-            for_counts,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Forgotten Detail": st.column_config.TextColumn("Forgotten Detail", width="large"),
-                "Mentions": st.column_config.ProgressColumn(
-                    "Total Mentions", 
-                    format="%d", 
-                    min_value=0, 
-                    max_value=max_for,
-                    width="medium"
-                )
-            }
-        )
+        st.dataframe(for_counts, use_container_width=True, hide_index=True)
 
 # -----------------------------------------------------------------------------
 # TAB 4: SEARCH EVIDENCE
@@ -954,62 +852,10 @@ with tab4:
     </div>
     """, unsafe_allow_html=True)
     
-    # Search Formulation Chart Card
     with st.container(border=True):
-        st.markdown("""
-        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Search Formulation Patterns</div>
-        <div style="font-size: 12px; color: #5F6368; margin-bottom: 24px;">Frequency of search methods used by users attempting photo retrieval.</div>
-        """, unsafe_allow_html=True)
-        
         strategy_counts = retrieval_df['search_strategy'].value_counts()
         fig_strat = render_horizontal_bar_chart(strategy_counts, x_label="Posts Using Strategy", height=280)
         st.plotly_chart(fig_strat, use_container_width=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # Verbatim Feedback Card
-    with st.container(border=True):
-        st.markdown("""
-        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124; margin-bottom: 16px;">Verbatim User Feedback</div>
-        """, unsafe_allow_html=True)
-        
-        selected_cat = st.selectbox("Filter by Search Issue Category:", options=retrieval_df['problem_category'].unique())
-        filtered_ev = retrieval_df[retrieval_df['problem_category'] == selected_cat]
-        total_count = len(filtered_ev)
-        
-        if total_count == 0:
-            st.info("No entries found for this category.")
-        else:
-            display_limit = st.slider(
-                "Display Limit:", 
-                min_value=5, 
-                max_value=max(5, total_count), 
-                value=min(15, total_count), 
-                step=5
-            )
-            
-            st.caption(f"Showing **{min(display_limit, total_count)}** of **{total_count:,}** quotes")
-            st.markdown("<br>", unsafe_allow_html=True)
-            
-            for idx, row in filtered_ev.head(display_limit).iterrows():
-                score_val = row.get('user_score')
-                source_platform = str(row.get('source_platform', 'Public Feedback'))
-                
-                score_tag = ""
-                if pd.notna(score_val):
-                    try:
-                        num_val = float(score_val)
-                        if 'App Store' in source_platform or 'Play Store' in source_platform:
-                            score_tag = f" • Rating: {num_val:.1f}/5.0"
-                        elif 'Reddit' in source_platform:
-                            score_tag = f" • Upvotes: {int(num_val)}"
-                        else:
-                            score_tag = f" • Score: {num_val:.1f}"
-                    except (ValueError, TypeError):
-                        score_tag = ""
-
-                with st.expander(f"Quote #{idx+1} ({source_platform}{score_tag})"):
-                    st.markdown(f'<div style="font-size: 14px; line-height: 20px; color: #202124;">"{row["full_text"]}"</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # TAB 5: ALL DATA
@@ -1023,22 +869,17 @@ with tab5:
     """, unsafe_allow_html=True)
     
     with st.container(border=True):
-        search_query_table = st.text_input("Filter table by keyword:", placeholder="e.g. receipt, date, album")
+        search_query_table = st.text_input("Filter table by keyword:", placeholder="e.g. receipt, date, album", key="corpus_search")
         
-        display_df = retrieval_df.copy()
-        if search_query_table:
+        display_df = retrieval_df.copy() if not retrieval_df.empty else pd.DataFrame()
+        if search_query_table and not display_df.empty:
             display_df = display_df[display_df['full_text'].str.contains(search_query_table, case=False, na=False)]
             
-        st.dataframe(
-            display_df[['source_platform', 'problem_category', 'search_strategy', 'remembered_anchor', 'forgotten_anchor', 'full_text']],
-            hide_index=True,
-            use_container_width=True,
-            column_config={
-                "source_platform": st.column_config.TextColumn("Platform", width="small"),
-                "problem_category": st.column_config.TextColumn("Search Issue", width="medium"),
-                "search_strategy": st.column_config.TextColumn("Strategy", width="medium"),
-                "remembered_anchor": st.column_config.TextColumn("Memory Cue", width="medium"),
-                "forgotten_anchor": st.column_config.TextColumn("Forgotten Detail", width="medium"),
-                "full_text": st.column_config.TextColumn("Full Feedback", width="large")
-            }
-        )
+        if not display_df.empty:
+            st.dataframe(
+                display_df[['source_platform', 'problem_category', 'search_strategy', 'remembered_anchor', 'forgotten_anchor', 'full_text']],
+                hide_index=True,
+                use_container_width=True
+            )
+        else:
+            st.info("No matching feedback rows found.")
