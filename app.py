@@ -5,19 +5,18 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
-from PIL import Image
 
 # -----------------------------------------------------------------------------
 # PAGE CONFIGURATION & GLOBAL LIGHT THEME ENFORCEMENT
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Google Photos Search Insights Engine & Sandbox",
+    page_title="Google Photos Search Insights Engine",
     page_icon="🔍",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Force Streamlit frontend theme state to Light Mode via JavaScript
+# Force Streamlit frontend engine to Light Mode via JS state override
 st.components.v1.html("""
 <script>
     const setLight = () => {
@@ -35,7 +34,7 @@ st.components.v1.html("""
 </script>
 """, height=0, width=0)
 
-# Material Design 3 Injection + Image Grid Aspect Ratio Overrides
+# Material Design 3 Injection with Target CSS Overrides
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Text:wght@400;500&family=Roboto:wght@400;500;700&display=swap');
@@ -205,7 +204,7 @@ st.markdown("""
         margin-bottom: 24px !important;
     }
 
-    /* Unselected Tabs Contrast Fix */
+    /* Tabs (st.tabs) */
     div[data-testid="stTabs"] {
         margin-bottom: 24px !important;
     }
@@ -255,48 +254,6 @@ st.markdown("""
 
     div[data-baseweb="tab-highlight"] {
         background-color: #1A73E8 !important;
-    }
-
-    /* Uniform Image Grid Height & Aspect Ratio */
-    div[data-testid="stImage"] {
-        width: 100% !important;
-        margin-bottom: 8px !important;
-    }
-
-    div[data-testid="stImage"] img {
-        width: 100% !important;
-        height: 200px !important;
-        object-fit: cover !important;
-        border-radius: 12px !important;
-        border: 1px solid #DADCE0 !important;
-        transition: transform 200ms ease, box-shadow 200ms ease !important;
-    }
-
-    div[data-testid="stImage"] img:hover {
-        box-shadow: 0px 4px 12px rgba(60, 64, 67, 0.15) !important;
-    }
-
-    /* Neutral Action Buttons */
-    div[data-testid="stButton"] > button {
-        height: 32px !important;
-        min-height: 32px !important;
-        border-radius: 16px !important;
-        background-color: #F1F3F4 !important;
-        color: #3C4043 !important;
-        font-family: 'Google Sans Text', 'Roboto', sans-serif !important;
-        font-size: 13px !important;
-        font-weight: 500 !important;
-        padding: 0 16px !important;
-        border: 1px solid #DADCE0 !important;
-        box-shadow: none !important;
-        transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease !important;
-        cursor: pointer !important;
-    }
-
-    div[data-testid="stButton"] > button:hover {
-        background-color: #E8F0FE !important;
-        color: #1A73E8 !important;
-        border-color: #AECBFA !important;
     }
 
     /* Container Cards */
@@ -394,6 +351,37 @@ st.markdown("""
         margin-top: 4px !important;
     }
 
+    /* Filled Pill Buttons */
+    div[data-testid="stButton"] > button {
+        height: 40px !important;
+        min-height: 40px !important;
+        border-radius: 20px !important;
+        background-color: #1A73E8 !important;
+        color: #FFFFFF !important;
+        font-family: 'Google Sans Text', 'Roboto', sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        padding: 0 24px !important;
+        border: none !important;
+        box-shadow: none !important;
+        transition: background-color 150ms ease, box-shadow 150ms ease !important;
+        cursor: pointer !important;
+        width: auto !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    div[data-testid="stButton"] > button:hover {
+        background-color: #1765CC !important;
+        color: #FFFFFF !important;
+    }
+
+    div[data-testid="stButton"] > button:active {
+        background-color: #185ABC !important;
+        color: #FFFFFF !important;
+    }
+
     /* Summary Card Output */
     .summary-output-card {
         background-color: #FFFFFF !important;
@@ -418,7 +406,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 1. API KEY & RESILIENT IMAGE INDEXING
+# 1. SECURE API KEY RETRIEVAL
 # -----------------------------------------------------------------------------
 api_key = None
 try:
@@ -429,24 +417,6 @@ except Exception:
 
 if not api_key:
     api_key = os.environ.get("GEMINI_API_KEY", "")
-
-@st.cache_data(show_spinner=False)
-def init_system(image_dirs=None):
-    """Fast, memory-safe photo library indexer."""
-    if image_dirs is None:
-        image_dirs = [os.path.join("data", "images"), "images", "."]
-        
-    found_images = []
-    extensions = ('*.jpg', '*.jpeg', '*.png', '*.webp', '*.JPG', '*.JPEG', '*.PNG')
-    
-    for folder in image_dirs:
-        if os.path.exists(folder):
-            for ext in extensions:
-                found_images.extend(glob.glob(os.path.join(folder, ext)))
-                
-    return sorted(list(set(found_images)))
-
-image_library = init_system()
 
 # -----------------------------------------------------------------------------
 # 2. DATA INGESTION & HEURISTIC ENGINE
@@ -518,7 +488,7 @@ def load_and_analyze_corpus():
 
     master_df['problem_category'] = master_df['full_text'].apply(tag_taxonomy)
 
-    # Search Strategy Tagging
+    # Search Formulation Strategy Classification
     def tag_search_strategy(text):
         if re.search(r'filename|\.jpg|\.png|file name|folder|album name', text, re.I):
             return 'Exact Metadata / Structured Search'
@@ -551,7 +521,7 @@ def load_and_analyze_corpus():
 df = load_and_analyze_corpus()
 
 # -----------------------------------------------------------------------------
-# PLOTLY CHART HELPER
+# PLOTLY HORIZONTAL BAR CHART HELPER
 # -----------------------------------------------------------------------------
 def render_horizontal_bar_chart(series_data, x_label="Mentions", height=320):
     chart_df = series_data.reset_index()
@@ -609,28 +579,32 @@ def render_horizontal_bar_chart(series_data, x_label="Mentions", height=320):
 # -----------------------------------------------------------------------------
 st.markdown("""
 <div style="margin-bottom: 24px;">
-    <div class="md-header-title">Google Photos Search Insights Engine & Sandbox</div>
-    <div class="md-header-subtitle">Analyzing photo retrieval friction, user memory decay, and steerable photo search</div>
+    <div class="md-header-title">Google Photos Search Insights Engine</div>
+    <div class="md-header-subtitle">Analyzing user feedback at scale to understand photo retrieval friction and memory decay</div>
     <div class="md-header-divider"></div>
 </div>
 """, unsafe_allow_html=True)
 
-retrieval_df = df[df['is_retrieval_issue'] == True] if not df.empty else pd.DataFrame()
+if df.empty:
+    st.error("No dataset found. Please ensure CSV feedback files are present in the directory.")
+    st.stop()
 
-# Sidebar Status
+retrieval_df = df[df['is_retrieval_issue'] == True]
+
+# Sidebar Engine Status
 with st.sidebar:
     status_pill = '<div class="status-pill-success"><span class="status-dot-success"></span>Gemini connected</div>' if api_key else '<div class="status-pill-error"><span class="status-dot-error"></span>Offline Mode</div>'
     st.markdown(f"""
     <div style="margin-bottom: 24px;">
-        <div class="sb-label">Dataset Stats</div>
+        <div class="sb-label">Dataset</div>
         <div class="sb-metric-row">
-            <div class="sb-metric-label">Total Ingested Feedback</div>
+            <div class="sb-metric-label">Total Ingested Posts</div>
             <div class="sb-metric-value">{len(df):,}</div>
         </div>
         <div class="sb-divider"></div>
         <div class="sb-metric-row">
-            <div class="sb-metric-label">Indexed Library Photos</div>
-            <div class="sb-metric-value">{len(image_library):,}</div>
+            <div class="sb-metric-label">Retrieval Issues Identified</div>
+            <div class="sb-metric-value">{len(retrieval_df):,}</div>
         </div>
         <div class="sb-divider"></div>
         <div class="sb-label">AI Status</div>
@@ -638,53 +612,14 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-# Navigation Tabs (Clean text, no emojis)
-tab_gallery, tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "Photo Library Gallery",
+# Navigation Tabs
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "AI Summary",
     "Priorities", 
     "Memory Patterns", 
     "Search Evidence",
     "All Data"
 ])
-
-# -----------------------------------------------------------------------------
-# TAB 0: PHOTO LIBRARY GALLERY
-# -----------------------------------------------------------------------------
-with tab_gallery:
-    st.markdown("""
-    <div>
-        <div class="md-section-title">MVP Photo Library Grid</div>
-        <div class="md-section-caption">Explore all indexed sandbox target and distractor photos in a clean, uniform grid.</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if not image_library:
-        st.info("No images found in `data/images/`. Please verify target and distractor photos are uploaded to GitHub.")
-    else:
-        with st.container(border=True):
-            filter_query = st.text_input("Filter library by keyword:", placeholder="e.g. sunset, baby, desk, lamp")
-        
-        filtered_imgs = [img for img in image_library if filter_query.lower() in img.lower()] if filter_query else image_library
-
-        # Render 3-column uniform grid
-        cols_per_row = 3
-        for i in range(0, len(filtered_imgs), cols_per_row):
-            cols = st.columns(cols_per_row)
-            for j in range(cols_per_row):
-                if i + j < len(filtered_imgs):
-                    img_path = filtered_imgs[i + j]
-                    fname = os.path.basename(img_path)
-                    
-                    with cols[j]:
-                        st.image(img_path, use_column_width=True)
-                        
-                        # Action Buttons (Clean text: Similar / Hide)
-                        btn_c1, btn_c2 = st.columns(2)
-                        with btn_c1:
-                            st.button("Similar", key=f"sim_{i+j}_{fname}")
-                        with btn_c2:
-                            st.button("Hide", key=f"hide_{i+j}_{fname}")
 
 # -----------------------------------------------------------------------------
 # TAB 1: AI SUMMARY
@@ -739,31 +674,37 @@ with tab1:
                 import google.generativeai as genai
                 genai.configure(api_key=api_key)
                 
-                selected_samples = retrieval_df['full_text'].head(30).tolist() if not retrieval_df.empty else []
+                selected_samples = retrieval_df['full_text'].head(30).tolist()
                 sample_text = "\n".join([f"- {text}" for text in selected_samples])
                 
-                prompt = (
-                    "You are a Principal Product Manager for Google Photos.\n\n"
-                    f"TASK:\nSynthesize user feedback to answer: '{user_query}'\n\n"
-                    f"USER FEEDBACK CONTEXT:\n{sample_text}\n\n"
-                    "CRITICAL INSTRUCTION:\n"
-                    "Do not include any scratchpad notes, bullet point analysis, planning text, or preamble.\n"
-                    "Start your response immediately with '# Executive Summary: User Retrieval Friction & Memory Cognitive Load'.\n\n"
-                    "REQUIRED REPORT STRUCTURE:\n"
-                    "# Executive Summary: User Retrieval Friction & Memory Cognitive Load\n\n"
-                    "### 1. Direct Answer & Retrieval Friction\n"
-                    "Synthesize primary categories of photos users struggle to retrieve with user quote evidence.\n\n"
-                    "### 2. Memory Anchor Analysis\n"
-                    "Provide a Markdown table comparing:\n"
-                    "- What Users Remember (The Emotional / Intentional Anchor)\n"
-                    "- What Users Forget (The Technical / Structural Gap)\n\n"
-                    "### 3. Strategic Opportunity Pillars\n"
-                    "Detail 3 actionable product initiatives for Google Photos to solve these friction points.\n"
-                )
-                
+                prompt = f"""You are a Principal Product Manager for Google Photos.
+
+TASK:
+Synthesize user feedback to answer: "{user_query}"
+
+USER FEEDBACK CONTEXT:
+{sample_text}
+
+CRITICAL INSTRUCTION:
+Do not include any scratchpad notes, bullet point analysis, planning text, or preamble. 
+Start your response immediately with the header "# Executive Summary: User Retrieval Friction & Memory Cognitive Load".
+
+REQUIRED REPORT STRUCTURE:
+# Executive Summary: User Retrieval Friction & Memory Cognitive Load
+
+### 1. Direct Answer & Retrieval Friction
+Synthesize primary categories of photos users struggle to retrieve with user quote evidence.
+
+### 2. Memory Anchor Analysis
+Provide a Markdown table comparing:
+- What Users Remember (The Emotional / Intentional Anchor)
+- What Users Forget (The Technical / Structural Gap)
+
+### 3. Strategic Opportunity Pillars
+Detail 3 actionable product initiatives for Google Photos to solve these friction points.
+"""
                 with st.spinner("Generating summary..."):
-                    # Updated API model to gemini-3.8-flash
-                    model = genai.GenerativeModel("gemini-3.8-flash")
+                    model = genai.GenerativeModel("gemini-2.0-flash")
                     res = model.generate_content(prompt)
                     if res and res.text:
                         res_text = res.text
@@ -782,134 +723,145 @@ with tab1:
 # TAB 2: PRIORITIES
 # -----------------------------------------------------------------------------
 with tab2:
-    if retrieval_df.empty:
-        st.info("No retrieval complaint dataset loaded. Please verify CSV files in directory.")
-    else:
-        st.markdown("""
-        <div>
-            <div class="md-section-title">What's going wrong in search, and what to fix first</div>
-            <div class="md-section-caption">Comparing search friction volume against issue severity to prioritize fixes.</div>
+    st.markdown("""
+    <div>
+        <div class="md-section-title">What's going wrong in search, and what to fix first</div>
+        <div class="md-section-caption">Comparing search friction volume against issue severity to prioritize fixes.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    category_counts = retrieval_df['problem_category'].value_counts()
+    total_retrieval = len(retrieval_df)
+    
+    top_issue = category_counts.index[0] if not category_counts.empty else "N/A"
+    top_share = (category_counts.iloc[0] / total_retrieval * 100) if not category_counts.empty else 0
+    
+    # 3 KPI Cards
+    kpi1, kpi2, kpi3 = st.columns(3, gap="medium")
+    with kpi1:
+        st.markdown(f"""
+        <div style="background-color: #F8F9FA; border: 1px solid #DADCE0; border-radius: 12px; padding: 20px; height: 100%;">
+            <div style="font-size: 12px; line-height: 16px; font-weight: 500; color: #5F6368; margin-bottom: 8px;">Total Search Complaints</div>
+            <div style="font-family: 'Google Sans', sans-serif; font-size: 32px; line-height: 40px; font-weight: 500; color: #202124;">{total_retrieval:,}</div>
         </div>
         """, unsafe_allow_html=True)
-        
-        category_counts = retrieval_df['problem_category'].value_counts()
-        total_retrieval = len(retrieval_df)
-        
-        top_issue = category_counts.index[0] if not category_counts.empty else "N/A"
-        top_share = (category_counts.iloc[0] / total_retrieval * 100) if not category_counts.empty else 0
-        
-        kpi1, kpi2, kpi3 = st.columns(3, gap="medium")
-        with kpi1:
-            st.markdown(f"""
-            <div style="background-color: #F8F9FA; border: 1px solid #DADCE0; border-radius: 12px; padding: 20px; height: 100%;">
-                <div style="font-size: 12px; line-height: 16px; font-weight: 500; color: #5F6368; margin-bottom: 8px;">Total Search Complaints</div>
-                <div style="font-family: 'Google Sans', sans-serif; font-size: 32px; line-height: 40px; font-weight: 500; color: #202124;">{total_retrieval:,}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with kpi2:
-            st.markdown(f"""
-            <div style="background-color: #F8F9FA; border: 1px solid #DADCE0; border-radius: 12px; padding: 20px; height: 100%;">
-                <div style="font-size: 12px; line-height: 16px; font-weight: 500; color: #5F6368; margin-bottom: 8px;">Top Search Friction Area</div>
-                <div style="font-family: 'Google Sans', sans-serif; font-size: 24px; line-height: 30px; font-weight: 500; color: #202124; word-break: break-word;">{top_issue}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        with kpi3:
-            st.markdown(f"""
-            <div style="background-color: #F8F9FA; border: 1px solid #DADCE0; border-radius: 12px; padding: 20px; height: 100%;">
-                <div style="font-size: 12px; line-height: 16px; font-weight: 500; color: #5F6368; margin-bottom: 8px;">Top Area Share</div>
-                <div style="font-family: 'Google Sans', sans-serif; font-size: 32px; line-height: 40px; font-weight: 500; color: #202124;">{top_share:.1f}%</div>
-            </div>
-            """, unsafe_allow_html=True)
+    with kpi2:
+        st.markdown(f"""
+        <div style="background-color: #F8F9FA; border: 1px solid #DADCE0; border-radius: 12px; padding: 20px; height: 100%;">
+            <div style="font-size: 12px; line-height: 16px; font-weight: 500; color: #5F6368; margin-bottom: 8px;">Top Search Friction Area</div>
+            <div style="font-family: 'Google Sans', sans-serif; font-size: 24px; line-height: 30px; font-weight: 500; color: #202124; word-break: break-word;">{top_issue}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with kpi3:
+        st.markdown(f"""
+        <div style="background-color: #F8F9FA; border: 1px solid #DADCE0; border-radius: 12px; padding: 20px; height: 100%;">
+            <div style="font-size: 12px; line-height: 16px; font-weight: 500; color: #5F6368; margin-bottom: 8px;">Top Area Share</div>
+            <div style="font-family: 'Google Sans', sans-serif; font-size: 32px; line-height: 40px; font-weight: 500; color: #202124;">{top_share:.1f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
 
-        st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-        with st.container(border=True):
-            st.markdown("""
-            <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Search Issue Distribution</div>
-            <div style="font-size: 12px; color: #5F6368; margin-bottom: 24px;">Total mentions per search friction category across user feedback.</div>
-            """, unsafe_allow_html=True)
-            fig_cats = render_horizontal_bar_chart(category_counts, x_label="Mentions", height=320)
-            st.plotly_chart(fig_cats, use_container_width=True)
+    # Search Issue Distribution Chart Card
+    with st.container(border=True):
+        st.markdown("""
+        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Search Issue Distribution</div>
+        <div style="font-size: 12px; color: #5F6368; margin-bottom: 24px;">Total mentions per search friction category across user feedback.</div>
+        """, unsafe_allow_html=True)
+        fig_cats = render_horizontal_bar_chart(category_counts, x_label="Mentions", height=320)
+        st.plotly_chart(fig_cats, use_container_width=True)
 
-        with st.container(border=True):
-            st.markdown("""
-            <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Fix-First Priority Score</div>
-            <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Priority = volume share × frustration severity rating.</div>
-            """, unsafe_allow_html=True)
+    # Search Issue Glossary Expander
+    with st.expander("📖 Guide: What do these 6 Search Categories mean?", expanded=False):
+        st.markdown("""
+        * **Temporal / Milestone Ambiguity:** User searches that rely on approximate dates, timeframes, or life events (e.g., *"photos from 3 years ago"*, *"wedding 2019"*). Failure happens when timestamps are wrong or chronological indexing fails.
+        * **General Retrieval Friction:** Broad, unclassified search failures where photos are missing, hidden, or unavailable despite normal scrolling and basic keywords.
+        * **Relational & Person Context:** Queries targeting specific individuals, family members, or friends (e.g., *"baby photos"*, *"untagged faces"*). Failure happens when face-tagging or grouping breaks.
+        * **Spatial & Event Context:** Searches based on locations, cities, or organized trips (e.g., *"trip to Japan"*, *"beach vacation"*). Failure happens when geotags or event clustering are inaccurate.
+        * **Visual & Attribute Matching:** Keyword searches for specific objects, colors, or visual items (e.g., *"red shirt"*, *"dog"*, *"car"*). Failure occurs when computer vision model indexing misses key objects.
+        * **Document / OCR & Text Retrieval:** Searches for embedded text inside screenshots, receipts, notes, or scanned documents. Failure occurs when Optical Character Recognition (OCR) fails to index image text.
+        """)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Priority Table Card
+    with st.container(border=True):
+        st.markdown("""
+        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Fix-First Priority Score</div>
+        <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Priority = volume share × frustration severity rating.</div>
+        """, unsafe_allow_html=True)
+        
+        opp_data = []
+        for cat, group in retrieval_df.groupby('problem_category'):
+            count = len(group)
+            pct = (count / total_retrieval) * 100
+            scores = pd.to_numeric(group['user_score'], errors='coerce').dropna()
+            avg_score = scores.mean() if not scores.empty else 2.5
             
-            opp_data = []
-            for cat, group in retrieval_df.groupby('problem_category'):
-                count = len(group)
-                pct = (count / total_retrieval) * 100
-                scores = pd.to_numeric(group['user_score'], errors='coerce').dropna()
-                avg_score = scores.mean() if not scores.empty else 2.5
-                
-                friction_factor = max(1.0, 5.0 - avg_score) if not scores.empty else 1.5
-                raw_opp_score = pct * friction_factor
-                opp_data.append({
-                    "Search Issue": cat,
-                    "Share": pct / 100.0,
-                    "Raw Score": raw_opp_score
-                })
-                
-            opp_df = pd.DataFrame(opp_data)
-            max_raw = opp_df['Raw Score'].max() if not opp_df.empty else 1
-            opp_df['Priority'] = (opp_df['Raw Score'] / max_raw) * 100
-            opp_df = opp_df.drop(columns=['Raw Score']).sort_values(by='Priority', ascending=False)
+            friction_factor = max(1.0, 5.0 - avg_score) if not scores.empty else 1.5
+            raw_opp_score = pct * friction_factor
+            opp_data.append({
+                "Search Issue": cat,
+                "Share": pct / 100.0,
+                "Raw Score": raw_opp_score
+            })
             
-            st.dataframe(
-                opp_df,
-                hide_index=True,
-                use_container_width=True,
-                column_config={
-                    "Search Issue": st.column_config.TextColumn("Search Issue", width="large"),
-                    "Share": st.column_config.ProgressColumn("Share of Issues", format="%.1f%%", min_value=0, max_value=1, width="medium"),
-                    "Priority": st.column_config.ProgressColumn("Fix Priority", format="%.0f / 100", min_value=0, max_value=100, width="medium")
-                }
-            )
+        opp_df = pd.DataFrame(opp_data)
+        max_raw = opp_df['Raw Score'].max() if not opp_df.empty else 1
+        opp_df['Priority'] = (opp_df['Raw Score'] / max_raw) * 100
+        opp_df = opp_df.drop(columns=['Raw Score']).sort_values(by='Priority', ascending=False)
+        
+        st.dataframe(
+            opp_df,
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                "Search Issue": st.column_config.TextColumn("Search Issue", width="large"),
+                "Share": st.column_config.ProgressColumn("Share of Issues", format="%.1f%%", min_value=0, max_value=1, width="medium"),
+                "Priority": st.column_config.ProgressColumn("Fix Priority", format="%.0f / 100", min_value=0, max_value=100, width="medium")
+            }
+        )
 
 # -----------------------------------------------------------------------------
 # TAB 3: MEMORY PATTERNS
 # -----------------------------------------------------------------------------
 with tab3:
-    if not retrieval_df.empty:
-        st.markdown("""
-        <div>
-            <div class="md-section-title">What people remember vs. what they forget</div>
-            <div class="md-section-caption">Mapping emotional and visual cues against lost technical metadata.</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        with st.container(border=True):
-            st.markdown('<div style="font-family: \"Google Sans\", sans-serif; font-size: 16px; font-weight: 500;">Details people remember</div>', unsafe_allow_html=True)
-            rem_counts = retrieval_df['remembered_anchor'].value_counts().reset_index()
-            rem_counts.columns = ['Memory Cue', 'Mentions']
-            st.dataframe(rem_counts, use_container_width=True, hide_index=True)
+    st.markdown("""
+    <div>
+        <div class="md-section-title">What people remember vs. what they forget</div>
+        <div class="md-section-caption">Mapping emotional and visual cues against lost technical metadata.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    with st.container(border=True):
+        st.markdown('<div style="font-family: \"Google Sans\", sans-serif; font-size: 16px; font-weight: 500;">Details people remember</div>', unsafe_allow_html=True)
+        rem_counts = retrieval_df['remembered_anchor'].value_counts().reset_index()
+        rem_counts.columns = ['Memory Cue', 'Mentions']
+        st.dataframe(rem_counts, use_container_width=True, hide_index=True)
 
-        st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-        with st.container(border=True):
-            st.markdown('<div style="font-family: \"Google Sans\", sans-serif; font-size: 16px; font-weight: 500;">Details people forget</div>', unsafe_allow_html=True)
-            for_counts = retrieval_df['forgotten_anchor'].value_counts().reset_index()
-            for_counts.columns = ['Forgotten Detail', 'Mentions']
-            st.dataframe(for_counts, use_container_width=True, hide_index=True)
+    with st.container(border=True):
+        st.markdown('<div style="font-family: \"Google Sans\", sans-serif; font-size: 16px; font-weight: 500;">Details people forget</div>', unsafe_allow_html=True)
+        for_counts = retrieval_df['forgotten_anchor'].value_counts().reset_index()
+        for_counts.columns = ['Forgotten Detail', 'Mentions']
+        st.dataframe(for_counts, use_container_width=True, hide_index=True)
 
 # -----------------------------------------------------------------------------
 # TAB 4: SEARCH EVIDENCE
 # -----------------------------------------------------------------------------
 with tab4:
-    if not retrieval_df.empty:
-        st.markdown("""
-        <div>
-            <div class="md-section-title">How people search when memory fails</div>
-            <div class="md-section-caption">Analysis of search formulations and verbatim user feedback.</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        with st.container(border=True):
-            strategy_counts = retrieval_df['search_strategy'].value_counts()
-            fig_strat = render_horizontal_bar_chart(strategy_counts, x_label="Posts Using Strategy", height=280)
-            st.plotly_chart(fig_strat, use_container_width=True)
+    st.markdown("""
+    <div>
+        <div class="md-section-title">How people search when memory fails</div>
+        <div class="md-section-caption">Analysis of search formulations and verbatim user feedback.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    with st.container(border=True):
+        strategy_counts = retrieval_df['search_strategy'].value_counts()
+        fig_strat = render_horizontal_bar_chart(strategy_counts, x_label="Posts Using Strategy", height=280)
+        st.plotly_chart(fig_strat, use_container_width=True)
 
 # -----------------------------------------------------------------------------
 # TAB 5: ALL DATA
