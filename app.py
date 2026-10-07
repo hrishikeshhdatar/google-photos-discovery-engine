@@ -205,7 +205,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       2. FIX INVISIBLE UNSELECTED TABS (st.tabs)
+       2. FIX UNSELECTED TABS (st.tabs)
        ========================================================= */
     div[data-testid="stTabs"] {
         margin-bottom: 24px !important;
@@ -230,7 +230,6 @@ st.markdown("""
         transition: background-color 150ms ease, color 150ms ease !important;
     }
 
-    /* Explicit dark charcoal text on unselected tabs */
     button[data-baseweb="tab"] * {
         color: #3C4043 !important;
         font-weight: 500 !important;
@@ -245,7 +244,6 @@ st.markdown("""
         color: #1A73E8 !important;
     }
 
-    /* Active / Selected Tab */
     button[data-baseweb="tab"][aria-selected="true"] {
         background-color: transparent !important;
         border-bottom: 3px solid #1A73E8 !important;
@@ -261,21 +259,29 @@ st.markdown("""
     }
 
     /* =========================================================
-       3. DATAFRAME & TABLE CONTAINER (st.dataframe)
+       3. NATIVE STREAMLIT BORDERED CONTAINERS AS CARDS
+       ========================================================= */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: #F8F9FA !important;
+        border: 1px solid #DADCE0 !important;
+        border-radius: 12px !important;
+        padding: 20px !important;
+        box-shadow: none !important;
+        margin-bottom: 24px !important;
+    }
+
+    /* =========================================================
+       4. DATAFRAME & TABLE VISIBILITY (st.dataframe)
        ========================================================= */
     div[data-testid="stDataFrame"] {
         border: 1px solid #DADCE0 !important;
-        border-radius: 12px !important;
+        border-radius: 8px !important;
         background-color: #FFFFFF !important;
         box-shadow: none !important;
     }
 
-    div[data-testid="stDataFrame"] iframe {
-        border-radius: 12px !important;
-    }
-
     /* =========================================================
-       4. FIX SELECTBOX DROPDOWNS (st.selectbox)
+       5. SELECTBOX DROPDOWNS (st.selectbox)
        ========================================================= */
     div[data-baseweb="select"] {
         background-color: #FFFFFF !important;
@@ -297,7 +303,6 @@ st.markdown("""
         fill: #5F6368 !important;
     }
 
-    /* Selectbox Dropdown Menu Popover */
     div[data-baseweb="popover"],
     div[data-baseweb="popover"] [data-baseweb="menu"],
     div[data-baseweb="popover"] ul,
@@ -328,25 +333,6 @@ st.markdown("""
         color: #1A73E8 !important;
     }
 
-    /* Card Containers */
-    .md-card {
-        background-color: #F8F9FA !important;
-        border: 1px solid #DADCE0 !important;
-        border-radius: 12px !important;
-        padding: 20px !important;
-        box-shadow: none !important;
-        margin-bottom: 24px !important;
-    }
-
-    div[data-testid="stVerticalBlockBorderWrapper"], div[data-testid="stExpander"] {
-        background-color: #F8F9FA !important;
-        border: 1px solid #DADCE0 !important;
-        border-radius: 12px !important;
-        box-shadow: none !important;
-        padding: 16px !important;
-        margin-bottom: 16px !important;
-    }
-
     /* Form Labels & Inputs */
     div[data-testid="stTextArea"] label, 
     div[data-testid="stTextInput"] label, 
@@ -358,6 +344,7 @@ st.markdown("""
         margin-bottom: 8px !important;
     }
 
+    div[data-testid="stTextArea"] textarea,
     div[data-testid="stTextInput"] input {
         background-color: #FFFFFF !important;
         color: #202124 !important;
@@ -405,7 +392,7 @@ st.markdown("""
 
     /* Summary Card Output */
     .summary-output-card {
-        background-color: #F8F9FA !important;
+        background-color: #FFFFFF !important;
         border: 1px solid #DADCE0 !important;
         border-radius: 12px !important;
         padding: 24px !important;
@@ -653,17 +640,15 @@ with tab1:
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown('<div class="md-card">', unsafe_allow_html=True)
-    user_query = st.text_area(
-        "Research Question:", 
-        value="What kinds of old photos do users struggle to retrieve, and what information have they forgotten?",
-        height=96
-    )
-    st.markdown('<div class="input-helper-text">Ask about retrieval issues, memory gaps, or opportunity areas.</div>', unsafe_allow_html=True)
-    st.markdown('<div style="height: 24px;"></div>', unsafe_allow_html=True)
-    
-    generate_btn = st.button("Generate Executive Summary")
-    st.markdown('</div>', unsafe_allow_html=True)
+    with st.container(border=True):
+        user_query = st.text_area(
+            "Research Question:", 
+            value="What kinds of old photos do users struggle to retrieve, and what information have they forgotten?",
+            height=96
+        )
+        st.markdown('<div class="input-helper-text">Ask about retrieval issues, memory gaps, or opportunity areas.</div>', unsafe_allow_html=True)
+        st.markdown('<div style="height: 16px;"></div>', unsafe_allow_html=True)
+        generate_btn = st.button("Generate Executive Summary")
 
     if generate_btn:
         if not api_key:
@@ -787,14 +772,13 @@ with tab2:
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Search Issue Distribution Chart Card
-    st.markdown("""
-    <div class="md-card">
+    with st.container(border=True):
+        st.markdown("""
         <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Search Issue Distribution</div>
         <div style="font-size: 12px; color: #5F6368; margin-bottom: 24px;">Total mentions per search friction category across user feedback.</div>
-    """, unsafe_allow_html=True)
-    fig_cats = render_horizontal_bar_chart(category_counts, x_label="Mentions", height=320)
-    st.plotly_chart(fig_cats, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+        fig_cats = render_horizontal_bar_chart(category_counts, x_label="Mentions", height=320)
+        st.plotly_chart(fig_cats, use_container_width=True)
 
     # Search Issue Glossary Expander
     with st.expander("📖 Guide: What do these 6 Search Categories mean?", expanded=False):
@@ -810,89 +794,87 @@ with tab2:
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Priority Table Card
-    st.markdown("""
-    <div class="md-card">
+    with st.container(border=True):
+        st.markdown("""
         <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Fix-First Priority Score</div>
         <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Priority = volume share × frustration severity rating.</div>
-    """, unsafe_allow_html=True)
-    
-    opp_data = []
-    for cat, group in retrieval_df.groupby('problem_category'):
-        count = len(group)
-        pct = (count / total_retrieval) * 100
-        scores = pd.to_numeric(group['user_score'], errors='coerce').dropna()
-        avg_score = scores.mean() if not scores.empty else 2.5
+        """, unsafe_allow_html=True)
         
-        friction_factor = 1.5
-        if not scores.empty and avg_score <= 5.0:
-            friction_factor = max(1.0, 5.0 - avg_score)
+        opp_data = []
+        for cat, group in retrieval_df.groupby('problem_category'):
+            count = len(group)
+            pct = (count / total_retrieval) * 100
+            scores = pd.to_numeric(group['user_score'], errors='coerce').dropna()
+            avg_score = scores.mean() if not scores.empty else 2.5
+            
+            friction_factor = 1.5
+            if not scores.empty and avg_score <= 5.0:
+                friction_factor = max(1.0, 5.0 - avg_score)
+            
+            raw_opp_score = pct * friction_factor
+            opp_data.append({
+                "Search Issue": cat,
+                "Share": pct / 100.0,
+                "Raw Score": raw_opp_score
+            })
+            
+        opp_df = pd.DataFrame(opp_data)
+        max_raw = opp_df['Raw Score'].max() if not opp_df.empty else 1
+        opp_df['Priority'] = (opp_df['Raw Score'] / max_raw) * 100
+        opp_df = opp_df.drop(columns=['Raw Score']).sort_values(by='Priority', ascending=False)
         
-        raw_opp_score = pct * friction_factor
-        opp_data.append({
-            "Search Issue": cat,
-            "Share": pct / 100.0,
-            "Raw Score": raw_opp_score
-        })
-        
-    opp_df = pd.DataFrame(opp_data)
-    max_raw = opp_df['Raw Score'].max() if not opp_df.empty else 1
-    opp_df['Priority'] = (opp_df['Raw Score'] / max_raw) * 100
-    opp_df = opp_df.drop(columns=['Raw Score']).sort_values(by='Priority', ascending=False)
-    
-    st.dataframe(
-        opp_df,
-        hide_index=True,
-        use_container_width=True,
-        column_config={
-            "Search Issue": st.column_config.TextColumn("Search Issue", width="large"),
-            "Share": st.column_config.ProgressColumn("Share of Issues", format="%.1f%%", min_value=0, max_value=1, width="medium"),
-            "Priority": st.column_config.ProgressColumn("Fix Priority", format="%.0f / 100", min_value=0, max_value=100, width="medium")
-        }
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.dataframe(
+            opp_df,
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                "Search Issue": st.column_config.TextColumn("Search Issue", width="large"),
+                "Share": st.column_config.ProgressColumn("Share of Issues", format="%.1f%%", min_value=0, max_value=1, width="medium"),
+                "Priority": st.column_config.ProgressColumn("Fix Priority", format="%.0f / 100", min_value=0, max_value=100, width="medium")
+            }
+        )
 
     # Side-by-Side Comparator
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("""
-    <div class="md-card">
+    with st.container(border=True):
+        st.markdown("""
         <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Side-by-Side Issue Comparator</div>
         <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Compare user memory anchors and search behavior across two problem areas.</div>
-    """, unsafe_allow_html=True)
-    
-    cats = list(retrieval_df['problem_category'].unique())
-    if len(cats) >= 2:
-        comp_col1, comp_col2 = st.columns(2)
-        with comp_col1:
-            cat_a = st.selectbox("Select Problem A:", options=cats, index=0)
-        with comp_col2:
-            cat_b = st.selectbox("Select Problem B:", options=cats, index=min(1, len(cats)-1))
-            
-        df_a = retrieval_df[retrieval_df['problem_category'] == cat_a]
-        df_b = retrieval_df[retrieval_df['problem_category'] == cat_b]
+        """, unsafe_allow_html=True)
         
-        c1, c2 = st.columns(2)
-        with c1:
-            st.markdown(f"""
-            <div style="background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 8px; padding: 16px;">
-                <div style="font-weight: 500; color: #202124;">{cat_a}</div>
-                <div style="font-size: 12px; color: #5F6368; margin-bottom: 8px;">Volume: {(len(df_a)/total_retrieval)*100:.1f}% ({len(df_a):,} posts)</div>
-                <div><b>Dominant Search:</b> {df_a['search_strategy'].mode()[0] if not df_a.empty else 'N/A'}</div>
-                <div><b>Main Memory Cue:</b> {df_a['remembered_anchor'].mode()[0] if not df_a.empty else 'N/A'}</div>
-                <div><b>Main Forgotten Detail:</b> {df_a['forgotten_anchor'].mode()[0] if not df_a.empty else 'N/A'}</div>
-            </div>
-            """, unsafe_allow_html=True)
+        cats = list(retrieval_df['problem_category'].unique())
+        if len(cats) >= 2:
+            comp_col1, comp_col2 = st.columns(2)
+            with comp_col1:
+                cat_a = st.selectbox("Select Problem A:", options=cats, index=0)
+            with comp_col2:
+                cat_b = st.selectbox("Select Problem B:", options=cats, index=min(1, len(cats)-1))
                 
-        with c2:
-            st.markdown(f"""
-            <div style="background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 8px; padding: 16px;">
-                <div style="font-weight: 500; color: #202124;">{cat_b}</div>
-                <div style="font-size: 12px; color: #5F6368; margin-bottom: 8px;">Volume: {(len(df_b)/total_retrieval)*100:.1f}% ({len(df_b):,} posts)</div>
-                <div><b>Dominant Search:</b> {df_b['search_strategy'].mode()[0] if not df_b.empty else 'N/A'}</div>
-                <div><b>Main Memory Cue:</b> {df_b['remembered_anchor'].mode()[0] if not df_b.empty else 'N/A'}</div>
-                <div><b>Main Forgotten Detail:</b> {df_b['forgotten_anchor'].mode()[0] if not df_b.empty else 'N/A'}</div>
-            </div>
-            """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+            df_a = retrieval_df[retrieval_df['problem_category'] == cat_a]
+            df_b = retrieval_df[retrieval_df['problem_category'] == cat_b]
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                st.markdown(f"""
+                <div style="background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 8px; padding: 16px;">
+                    <div style="font-weight: 500; color: #202124;">{cat_a}</div>
+                    <div style="font-size: 12px; color: #5F6368; margin-bottom: 8px;">Volume: {(len(df_a)/total_retrieval)*100:.1f}% ({len(df_a):,} posts)</div>
+                    <div><b>Dominant Search:</b> {df_a['search_strategy'].mode()[0] if not df_a.empty else 'N/A'}</div>
+                    <div><b>Main Memory Cue:</b> {df_a['remembered_anchor'].mode()[0] if not df_a.empty else 'N/A'}</div>
+                    <div><b>Main Forgotten Detail:</b> {df_a['forgotten_anchor'].mode()[0] if not df_a.empty else 'N/A'}</div>
+                </div>
+                """, unsafe_allow_html=True)
+                    
+            with c2:
+                st.markdown(f"""
+                <div style="background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 8px; padding: 16px;">
+                    <div style="font-weight: 500; color: #202124;">{cat_b}</div>
+                    <div style="font-size: 12px; color: #5F6368; margin-bottom: 8px;">Volume: {(len(df_b)/total_retrieval)*100:.1f}% ({len(df_b):,} posts)</div>
+                    <div><b>Dominant Search:</b> {df_b['search_strategy'].mode()[0] if not df_b.empty else 'N/A'}</div>
+                    <div><b>Main Memory Cue:</b> {df_b['remembered_anchor'].mode()[0] if not df_b.empty else 'N/A'}</div>
+                    <div><b>Main Forgotten Detail:</b> {df_b['forgotten_anchor'].mode()[0] if not df_b.empty else 'N/A'}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # TAB 3: MEMORY PATTERNS
@@ -906,62 +888,60 @@ with tab3:
     """, unsafe_allow_html=True)
     
     # Details People Remember Table Card
-    st.markdown("""
-    <div class="md-card">
+    with st.container(border=True):
+        st.markdown("""
         <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Details people remember</div>
         <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Emotional, visual, and relational memory cues.</div>
-    """, unsafe_allow_html=True)
-    
-    rem_counts = retrieval_df['remembered_anchor'].value_counts().reset_index()
-    rem_counts.columns = ['Memory Cue', 'Mentions']
-    max_rem = int(rem_counts['Mentions'].max()) if not rem_counts.empty else 100
-    
-    st.dataframe(
-        rem_counts,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Memory Cue": st.column_config.TextColumn("Memory Cue", width="large"),
-            "Mentions": st.column_config.ProgressColumn(
-                "Total Mentions", 
-                format="%d", 
-                min_value=0, 
-                max_value=max_rem,
-                width="medium"
-            )
-        }
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+        
+        rem_counts = retrieval_df['remembered_anchor'].value_counts().reset_index()
+        rem_counts.columns = ['Memory Cue', 'Mentions']
+        max_rem = int(rem_counts['Mentions'].max()) if not rem_counts.empty else 100
+        
+        st.dataframe(
+            rem_counts,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Memory Cue": st.column_config.TextColumn("Memory Cue", width="large"),
+                "Mentions": st.column_config.ProgressColumn(
+                    "Total Mentions", 
+                    format="%d", 
+                    min_value=0, 
+                    max_value=max_rem,
+                    width="medium"
+                )
+            }
+        )
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Details People Forget Table Card
-    st.markdown("""
-    <div class="md-card">
+    with st.container(border=True):
+        st.markdown("""
         <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Details people forget</div>
         <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Technical metadata, exact dates, and folder structures.</div>
-    """, unsafe_allow_html=True)
-    
-    for_counts = retrieval_df['forgotten_anchor'].value_counts().reset_index()
-    for_counts.columns = ['Forgotten Detail', 'Mentions']
-    max_for = int(for_counts['Mentions'].max()) if not for_counts.empty else 100
-    
-    st.dataframe(
-        for_counts,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Forgotten Detail": st.column_config.TextColumn("Forgotten Detail", width="large"),
-            "Mentions": st.column_config.ProgressColumn(
-                "Total Mentions", 
-                format="%d", 
-                min_value=0, 
-                max_value=max_for,
-                width="medium"
-            )
-        }
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+        
+        for_counts = retrieval_df['forgotten_anchor'].value_counts().reset_index()
+        for_counts.columns = ['Forgotten Detail', 'Mentions']
+        max_for = int(for_counts['Mentions'].max()) if not for_counts.empty else 100
+        
+        st.dataframe(
+            for_counts,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Forgotten Detail": st.column_config.TextColumn("Forgotten Detail", width="large"),
+                "Mentions": st.column_config.ProgressColumn(
+                    "Total Mentions", 
+                    format="%d", 
+                    min_value=0, 
+                    max_value=max_for,
+                    width="medium"
+                )
+            }
+        )
 
 # -----------------------------------------------------------------------------
 # TAB 4: SEARCH EVIDENCE
@@ -975,64 +955,61 @@ with tab4:
     """, unsafe_allow_html=True)
     
     # Search Formulation Chart Card
-    st.markdown("""
-    <div class="md-card">
+    with st.container(border=True):
+        st.markdown("""
         <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Search Formulation Patterns</div>
         <div style="font-size: 12px; color: #5F6368; margin-bottom: 24px;">Frequency of search methods used by users attempting photo retrieval.</div>
-    """, unsafe_allow_html=True)
-    
-    strategy_counts = retrieval_df['search_strategy'].value_counts()
-    fig_strat = render_horizontal_bar_chart(strategy_counts, x_label="Posts Using Strategy", height=280)
-    st.plotly_chart(fig_strat, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+        
+        strategy_counts = retrieval_df['search_strategy'].value_counts()
+        fig_strat = render_horizontal_bar_chart(strategy_counts, x_label="Posts Using Strategy", height=280)
+        st.plotly_chart(fig_strat, use_container_width=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
     
     # Verbatim Feedback Card
-    st.markdown("""
-    <div class="md-card">
+    with st.container(border=True):
+        st.markdown("""
         <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124; margin-bottom: 16px;">Verbatim User Feedback</div>
-    """, unsafe_allow_html=True)
-    
-    selected_cat = st.selectbox("Filter by Search Issue Category:", options=retrieval_df['problem_category'].unique())
-    filtered_ev = retrieval_df[retrieval_df['problem_category'] == selected_cat]
-    total_count = len(filtered_ev)
-    
-    if total_count == 0:
-        st.info("No entries found for this category.")
-    else:
-        display_limit = st.slider(
-            "Display Limit:", 
-            min_value=5, 
-            max_value=max(5, total_count), 
-            value=min(15, total_count), 
-            step=5
-        )
+        """, unsafe_allow_html=True)
         
-        st.caption(f"Showing **{min(display_limit, total_count)}** of **{total_count:,}** quotes")
-        st.markdown("<br>", unsafe_allow_html=True)
+        selected_cat = st.selectbox("Filter by Search Issue Category:", options=retrieval_df['problem_category'].unique())
+        filtered_ev = retrieval_df[retrieval_df['problem_category'] == selected_cat]
+        total_count = len(filtered_ev)
         
-        for idx, row in filtered_ev.head(display_limit).iterrows():
-            score_val = row.get('user_score')
-            source_platform = str(row.get('source_platform', 'Public Feedback'))
+        if total_count == 0:
+            st.info("No entries found for this category.")
+        else:
+            display_limit = st.slider(
+                "Display Limit:", 
+                min_value=5, 
+                max_value=max(5, total_count), 
+                value=min(15, total_count), 
+                step=5
+            )
             
-            score_tag = ""
-            if pd.notna(score_val):
-                try:
-                    num_val = float(score_val)
-                    if 'App Store' in source_platform or 'Play Store' in source_platform:
-                        score_tag = f" • Rating: {num_val:.1f}/5.0"
-                    elif 'Reddit' in source_platform:
-                        score_tag = f" • Upvotes: {int(num_val)}"
-                    else:
-                        score_tag = f" • Score: {num_val:.1f}"
-                except (ValueError, TypeError):
-                    score_tag = ""
-
-            with st.expander(f"Quote #{idx+1} ({source_platform}{score_tag})"):
-                st.markdown(f'<div style="font-size: 14px; line-height: 20px; color: #202124;">"{row["full_text"]}"</div>', unsafe_allow_html=True)
+            st.caption(f"Showing **{min(display_limit, total_count)}** of **{total_count:,}** quotes")
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            for idx, row in filtered_ev.head(display_limit).iterrows():
+                score_val = row.get('user_score')
+                source_platform = str(row.get('source_platform', 'Public Feedback'))
                 
-    st.markdown('</div>', unsafe_allow_html=True)
+                score_tag = ""
+                if pd.notna(score_val):
+                    try:
+                        num_val = float(score_val)
+                        if 'App Store' in source_platform or 'Play Store' in source_platform:
+                            score_tag = f" • Rating: {num_val:.1f}/5.0"
+                        elif 'Reddit' in source_platform:
+                            score_tag = f" • Upvotes: {int(num_val)}"
+                        else:
+                            score_tag = f" • Score: {num_val:.1f}"
+                    except (ValueError, TypeError):
+                        score_tag = ""
+
+                with st.expander(f"Quote #{idx+1} ({source_platform}{score_tag})"):
+                    st.markdown(f'<div style="font-size: 14px; line-height: 20px; color: #202124;">"{row["full_text"]}"</div>', unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # TAB 5: ALL DATA
@@ -1045,24 +1022,23 @@ with tab5:
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown('<div class="md-card">', unsafe_allow_html=True)
-    search_query_table = st.text_input("Filter table by keyword:", placeholder="e.g. receipt, date, album")
-    
-    display_df = retrieval_df.copy()
-    if search_query_table:
-        display_df = display_df[display_df['full_text'].str.contains(search_query_table, case=False, na=False)]
+    with st.container(border=True):
+        search_query_table = st.text_input("Filter table by keyword:", placeholder="e.g. receipt, date, album")
         
-    st.dataframe(
-        display_df[['source_platform', 'problem_category', 'search_strategy', 'remembered_anchor', 'forgotten_anchor', 'full_text']],
-        hide_index=True,
-        use_container_width=True,
-        column_config={
-            "source_platform": st.column_config.TextColumn("Platform", width="small"),
-            "problem_category": st.column_config.TextColumn("Search Issue", width="medium"),
-            "search_strategy": st.column_config.TextColumn("Strategy", width="medium"),
-            "remembered_anchor": st.column_config.TextColumn("Memory Cue", width="medium"),
-            "forgotten_anchor": st.column_config.TextColumn("Forgotten Detail", width="medium"),
-            "full_text": st.column_config.TextColumn("Full Feedback", width="large")
-        }
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
+        display_df = retrieval_df.copy()
+        if search_query_table:
+            display_df = display_df[display_df['full_text'].str.contains(search_query_table, case=False, na=False)]
+            
+        st.dataframe(
+            display_df[['source_platform', 'problem_category', 'search_strategy', 'remembered_anchor', 'forgotten_anchor', 'full_text']],
+            hide_index=True,
+            use_container_width=True,
+            column_config={
+                "source_platform": st.column_config.TextColumn("Platform", width="small"),
+                "problem_category": st.column_config.TextColumn("Search Issue", width="medium"),
+                "search_strategy": st.column_config.TextColumn("Strategy", width="medium"),
+                "remembered_anchor": st.column_config.TextColumn("Memory Cue", width="medium"),
+                "forgotten_anchor": st.column_config.TextColumn("Forgotten Detail", width="medium"),
+                "full_text": st.column_config.TextColumn("Full Feedback", width="large")
+            }
+        )
