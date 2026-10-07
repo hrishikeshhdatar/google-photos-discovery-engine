@@ -410,7 +410,7 @@ def load_and_analyze_corpus():
     master_df = master_df[master_df['full_text'].str.len() > 10].drop_duplicates(subset=['full_text'])
 
     # Taxonomy Tagging
-    retrieval_kw = r'search|find|cant find|can\'t find|missing|lost|where|date|location|album|ocr|text|gemini|scroll|remember|face|people'
+    retrieval_kw = r"search|find|cant find|can't find|missing|lost|where|date|location|album|ocr|text|gemini|scroll|remember|face|people"
     master_df['is_retrieval_issue'] = master_df['full_text'].str.contains(retrieval_kw, case=False, na=False)
 
     taxonomies = {
@@ -520,13 +520,13 @@ def render_horizontal_bar_chart(series_data, x_label="Mentions", height=320):
 # -----------------------------------------------------------------------------
 # 3. HEADER & SIDEBAR NAVIGATION
 # -----------------------------------------------------------------------------
-st.markdown('''
+st.markdown("""
 <div style="margin-bottom: 24px;">
     <div class="md-header-title">Google Photos Search Insights Engine</div>
     <div class="md-header-subtitle">Analyzing user feedback at scale to understand photo retrieval friction and memory decay</div>
     <div class="md-header-divider"></div>
 </div>
-''', unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 if df.empty:
     st.error("No dataset found. Please ensure CSV feedback files are present in the directory.")
@@ -536,27 +536,24 @@ retrieval_df = df[df['is_retrieval_issue'] == True]
 
 # Sidebar Engine Status
 with st.sidebar:
-    st.markdown('''
+    status_pill = '<div class="status-pill-success"><span class="status-dot-success"></span>Gemini connected</div>' if api_key else '<div class="status-pill-error"><span class="status-dot-error"></span>Offline Mode</div>'
+    st.markdown(f"""
     <div style="margin-bottom: 24px;">
         <div class="sb-label">Dataset</div>
         <div class="sb-metric-row">
             <div class="sb-metric-label">Total Ingested Posts</div>
-            <div class="sb-metric-value">{total_posts:,}</div>
+            <div class="sb-metric-value">{len(df):,}</div>
         </div>
         <div class="sb-divider"></div>
         <div class="sb-metric-row">
             <div class="sb-metric-label">Retrieval Issues Identified</div>
-            <div class="sb-metric-value">{retrieval_issues:,}</div>
+            <div class="sb-metric-value">{len(retrieval_df):,}</div>
         </div>
         <div class="sb-divider"></div>
         <div class="sb-label">AI Status</div>
-        {status_chip}
+        {status_pill}
     </div>
-    '''.format(
-        total_posts=len(df),
-        retrieval_issues=len(retrieval_df),
-        status_chip='''<div class="status-pill-success"><span class="status-dot-success"></span>Gemini connected</div>''' if api_key else '''<div class="status-pill-error"><span class="status-dot-error"></span>Offline Mode</div>'''
-    ), unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
 # Navigation Tabs
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -571,12 +568,12 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 # TAB 1: AI SUMMARY (GEMINI AI SYNTHESIZER)
 # -----------------------------------------------------------------------------
 with tab1:
-    st.markdown('''
+    st.markdown("""
     <div>
         <div class="md-section-title">AI Research Synthesizer</div>
         <div class="md-section-caption">Synthesize real user complaint logs into executive research findings using Gemini.</div>
     </div>
-    ''', unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
     
     st.markdown('<div class="md-card">', unsafe_allow_html=True)
     user_query = st.text_area(
@@ -593,7 +590,7 @@ with tab1:
     if generate_btn:
         if not api_key:
             st.warning("No Gemini API key found. Displaying standard summary baseline:")
-            st.markdown('''
+            st.markdown("""
             <div class="summary-output-card">
             <h3>Executive Summary: User Retrieval Friction & Memory Cognitive Load</h3>
             
@@ -616,7 +613,7 @@ with tab1:
                 <li>Improve device vs. cloud storage clarity.</li>
             </ul>
             </div>
-            ''', unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
         else:
             try:
                 import google.generativeai as genai
@@ -660,5 +657,334 @@ Detail 3 actionable, high-impact product initiatives for Google Photos to solve 
                         if "# Executive Summary" in res_text:
                             res_text = "# Executive Summary" + res_text.split("# Executive Summary", 1)[1]
                         
-                        st.markdown(f'<div class="summary-output-card">', unsafe_allow_html=True)
-                        st.markdown(res
+                        st.markdown('<div class="summary-output-card">', unsafe_allow_html=True)
+                        st.markdown(res_text)
+                        st.markdown('</div>', unsafe_allow_html=True)
+                    else:
+                        st.error("Unable to generate summary from API.")
+            except Exception as e:
+                st.error(f"Gemini API Error: {str(e)}")
+
+# -----------------------------------------------------------------------------
+# TAB 2: PRIORITIES
+# -----------------------------------------------------------------------------
+with tab2:
+    st.markdown("""
+    <div>
+        <div class="md-section-title">What's going wrong in search, and what to fix first</div>
+        <div class="md-section-caption">Comparing search friction volume against issue severity to prioritize fixes.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    category_counts = retrieval_df['problem_category'].value_counts()
+    total_retrieval = len(retrieval_df)
+    
+    top_issue = category_counts.index[0] if not category_counts.empty else "N/A"
+    top_share = (category_counts.iloc[0] / total_retrieval * 100) if not category_counts.empty else 0
+    
+    # 3 Equal-Height KPI Cards
+    kpi1, kpi2, kpi3 = st.columns(3, gap="medium")
+    with kpi1:
+        st.markdown(f"""
+        <div style="background-color: #F8F9FA; border: 1px solid #DADCE0; border-radius: 12px; padding: 20px; height: 100%;">
+            <div style="font-size: 12px; line-height: 16px; font-weight: 500; color: #5F6368; margin-bottom: 8px;">Total Search Complaints</div>
+            <div style="font-family: 'Google Sans', sans-serif; font-size: 32px; line-height: 40px; font-weight: 500; color: #202124;">{total_retrieval:,}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with kpi2:
+        st.markdown(f"""
+        <div style="background-color: #F8F9FA; border: 1px solid #DADCE0; border-radius: 12px; padding: 20px; height: 100%;">
+            <div style="font-size: 12px; line-height: 16px; font-weight: 500; color: #5F6368; margin-bottom: 8px;">Top Search Friction Area</div>
+            <div style="font-family: 'Google Sans', sans-serif; font-size: 24px; line-height: 30px; font-weight: 500; color: #202124; word-break: break-word;">{top_issue}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with kpi3:
+        st.markdown(f"""
+        <div style="background-color: #F8F9FA; border: 1px solid #DADCE0; border-radius: 12px; padding: 20px; height: 100%;">
+            <div style="font-size: 12px; line-height: 16px; font-weight: 500; color: #5F6368; margin-bottom: 8px;">Top Area Share</div>
+            <div style="font-family: 'Google Sans', sans-serif; font-size: 32px; line-height: 40px; font-weight: 500; color: #202124;">{top_share:.1f}%</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Search Issue Distribution Chart Card
+    st.markdown("""
+    <div class="md-card">
+        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Search Issue Distribution</div>
+        <div style="font-size: 12px; color: #5F6368; margin-bottom: 24px;">Total mentions per search friction category across user feedback.</div>
+    """, unsafe_allow_html=True)
+    fig_cats = render_horizontal_bar_chart(category_counts, x_label="Mentions", height=320)
+    st.plotly_chart(fig_cats, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Search Issue Glossary Expander
+    with st.expander("📖 Guide: What do these 6 Search Categories mean?", expanded=False):
+        st.markdown("""
+        * **Temporal / Milestone Ambiguity:** User searches that rely on approximate dates, timeframes, or life events (e.g., *"photos from 3 years ago"*, *"wedding 2019"*). Failure happens when timestamps are wrong or chronological indexing fails.
+        * **General Retrieval Friction:** Broad, unclassified search failures where photos are missing, hidden, or unavailable despite normal scrolling and basic keywords.
+        * **Relational & Person Context:** Queries targeting specific individuals, family members, or friends (e.g., *"baby photos"*, *"untagged faces"*). Failure happens when face-tagging or grouping breaks.
+        * **Spatial & Event Context:** Searches based on locations, cities, or organized trips (e.g., *"trip to Japan"*, *"beach vacation"*). Failure happens when geotags or event clustering are inaccurate.
+        * **Visual & Attribute Matching:** Keyword searches for specific objects, colors, or visual items (e.g., *"red shirt"*, *"dog"*, *"car"*). Failure occurs when computer vision model indexing misses key objects.
+        * **Document / OCR & Text Retrieval:** Searches for embedded text inside screenshots, receipts, notes, or scanned documents. Failure occurs when Optical Character Recognition (OCR) fails to index image text.
+        """)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Priority Table Card
+    st.markdown("""
+    <div class="md-card">
+        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Fix-First Priority Score</div>
+        <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Priority = volume share × frustration severity rating.</div>
+    """, unsafe_allow_html=True)
+    
+    opp_data = []
+    for cat, group in retrieval_df.groupby('problem_category'):
+        count = len(group)
+        pct = (count / total_retrieval) * 100
+        scores = pd.to_numeric(group['user_score'], errors='coerce').dropna()
+        avg_score = scores.mean() if not scores.empty else 2.5
+        
+        friction_factor = 1.5
+        if not scores.empty and avg_score <= 5.0:
+            friction_factor = max(1.0, 5.0 - avg_score)
+        
+        raw_opp_score = pct * friction_factor
+        opp_data.append({
+            "Search Issue": cat,
+            "Share": pct / 100.0,
+            "Raw Score": raw_opp_score
+        })
+        
+    opp_df = pd.DataFrame(opp_data)
+    max_raw = opp_df['Raw Score'].max() if not opp_df.empty else 1
+    opp_df['Priority'] = (opp_df['Raw Score'] / max_raw) * 100
+    opp_df = opp_df.drop(columns=['Raw Score']).sort_values(by='Priority', ascending=False)
+    
+    st.dataframe(
+        opp_df,
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "Search Issue": st.column_config.TextColumn("Search Issue", width="large"),
+            "Share": st.column_config.ProgressColumn("Share of Issues", format="%.1f%%", min_value=0, max_value=1, width="medium"),
+            "Priority": st.column_config.ProgressColumn("Fix Priority", format="%.0f / 100", min_value=0, max_value=100, width="medium")
+        }
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Side-by-Side Comparator
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="md-card">
+        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Side-by-Side Issue Comparator</div>
+        <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Compare user memory anchors and search behavior across two problem areas.</div>
+    """, unsafe_allow_html=True)
+    
+    cats = list(retrieval_df['problem_category'].unique())
+    if len(cats) >= 2:
+        comp_col1, comp_col2 = st.columns(2)
+        with comp_col1:
+            cat_a = st.selectbox("Select Problem A:", options=cats, index=0)
+        with comp_col2:
+            cat_b = st.selectbox("Select Problem B:", options=cats, index=min(1, len(cats)-1))
+            
+        df_a = retrieval_df[retrieval_df['problem_category'] == cat_a]
+        df_b = retrieval_df[retrieval_df['problem_category'] == cat_b]
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown(f"""
+            <div style="background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 8px; padding: 16px;">
+                <div style="font-weight: 500; color: #202124;">{cat_a}</div>
+                <div style="font-size: 12px; color: #5F6368; margin-bottom: 8px;">Volume: {(len(df_a)/total_retrieval)*100:.1f}% ({len(df_a):,} posts)</div>
+                <div><b>Dominant Search:</b> {df_a['search_strategy'].mode()[0] if not df_a.empty else 'N/A'}</div>
+                <div><b>Main Memory Cue:</b> {df_a['remembered_anchor'].mode()[0] if not df_a.empty else 'N/A'}</div>
+                <div><b>Main Forgotten Detail:</b> {df_a['forgotten_anchor'].mode()[0] if not df_a.empty else 'N/A'}</div>
+            </div>
+            """, unsafe_allow_html=True)
+                
+        with c2:
+            st.markdown(f"""
+            <div style="background: #FFFFFF; border: 1px solid #DADCE0; border-radius: 8px; padding: 16px;">
+                <div style="font-weight: 500; color: #202124;">{cat_b}</div>
+                <div style="font-size: 12px; color: #5F6368; margin-bottom: 8px;">Volume: {(len(df_b)/total_retrieval)*100:.1f}% ({len(df_b):,} posts)</div>
+                <div><b>Dominant Search:</b> {df_b['search_strategy'].mode()[0] if not df_b.empty else 'N/A'}</div>
+                <div><b>Main Memory Cue:</b> {df_b['remembered_anchor'].mode()[0] if not df_b.empty else 'N/A'}</div>
+                <div><b>Main Forgotten Detail:</b> {df_b['forgotten_anchor'].mode()[0] if not df_b.empty else 'N/A'}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# TAB 3: MEMORY PATTERNS
+# -----------------------------------------------------------------------------
+with tab3:
+    st.markdown("""
+    <div>
+        <div class="md-section-title">What people remember vs. what they forget</div>
+        <div class="md-section-caption">Mapping emotional and visual cues against lost technical metadata.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Details People Remember Table Card
+    st.markdown("""
+    <div class="md-card">
+        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Details people remember</div>
+        <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Emotional, visual, and relational memory cues.</div>
+    """, unsafe_allow_html=True)
+    
+    rem_counts = retrieval_df['remembered_anchor'].value_counts().reset_index()
+    rem_counts.columns = ['Memory Cue', 'Mentions']
+    max_rem = int(rem_counts['Mentions'].max()) if not rem_counts.empty else 100
+    
+    st.dataframe(
+        rem_counts,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Memory Cue": st.column_config.TextColumn("Memory Cue", width="large"),
+            "Mentions": st.column_config.ProgressColumn(
+                "Total Mentions", 
+                format="%d", 
+                min_value=0, 
+                max_value=max_rem,
+                width="medium"
+            )
+        }
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Details People Forget Table Card
+    st.markdown("""
+    <div class="md-card">
+        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Details people forget</div>
+        <div style="font-size: 12px; color: #5F6368; margin-bottom: 16px;">Technical metadata, exact dates, and folder structures.</div>
+    """, unsafe_allow_html=True)
+    
+    for_counts = retrieval_df['forgotten_anchor'].value_counts().reset_index()
+    for_counts.columns = ['Forgotten Detail', 'Mentions']
+    max_for = int(for_counts['Mentions'].max()) if not for_counts.empty else 100
+    
+    st.dataframe(
+        for_counts,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Forgotten Detail": st.column_config.TextColumn("Forgotten Detail", width="large"),
+            "Mentions": st.column_config.ProgressColumn(
+                "Total Mentions", 
+                format="%d", 
+                min_value=0, 
+                max_value=max_for,
+                width="medium"
+            )
+        }
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# TAB 4: SEARCH EVIDENCE
+# -----------------------------------------------------------------------------
+with tab4:
+    st.markdown("""
+    <div>
+        <div class="md-section-title">How people search when memory fails</div>
+        <div class="md-section-caption">Analysis of search formulations and verbatim user feedback.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Search Formulation Chart Card
+    st.markdown("""
+    <div class="md-card">
+        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124;">Search Formulation Patterns</div>
+        <div style="font-size: 12px; color: #5F6368; margin-bottom: 24px;">Frequency of search methods used by users attempting photo retrieval.</div>
+    """, unsafe_allow_html=True)
+    
+    strategy_counts = retrieval_df['search_strategy'].value_counts()
+    fig_strat = render_horizontal_bar_chart(strategy_counts, x_label="Posts Using Strategy", height=280)
+    st.plotly_chart(fig_strat, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Verbatim Feedback Card
+    st.markdown("""
+    <div class="md-card">
+        <div style="font-family: 'Google Sans', sans-serif; font-size: 16px; font-weight: 500; color: #202124; margin-bottom: 16px;">Verbatim User Feedback</div>
+    """, unsafe_allow_html=True)
+    
+    selected_cat = st.selectbox("Filter by Search Issue Category:", options=retrieval_df['problem_category'].unique())
+    filtered_ev = retrieval_df[retrieval_df['problem_category'] == selected_cat]
+    total_count = len(filtered_ev)
+    
+    if total_count == 0:
+        st.info("No entries found for this category.")
+    else:
+        display_limit = st.slider(
+            "Display Limit:", 
+            min_value=5, 
+            max_value=max(5, total_count), 
+            value=min(15, total_count), 
+            step=5
+        )
+        
+        st.caption(f"Showing **{min(display_limit, total_count)}** of **{total_count:,}** quotes")
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        for idx, row in filtered_ev.head(display_limit).iterrows():
+            score_val = row.get('user_score')
+            source_platform = str(row.get('source_platform', 'Public Feedback'))
+            
+            score_tag = ""
+            if pd.notna(score_val):
+                try:
+                    num_val = float(score_val)
+                    if 'App Store' in source_platform or 'Play Store' in source_platform:
+                        score_tag = f" • Rating: {num_val:.1f}/5.0"
+                    elif 'Reddit' in source_platform:
+                        score_tag = f" • Upvotes: {int(num_val)}"
+                    else:
+                        score_tag = f" • Score: {num_val:.1f}"
+                except (ValueError, TypeError):
+                    score_tag = ""
+
+            with st.expander(f"Quote #{idx+1} ({source_platform}{score_tag})"):
+                st.markdown(f'<div style="font-size: 14px; line-height: 20px; color: #202124;">"{row["full_text"]}"</div>', unsafe_allow_html=True)
+                
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# TAB 5: ALL DATA
+# -----------------------------------------------------------------------------
+with tab5:
+    st.markdown("""
+    <div>
+        <div class="md-section-title">Full Ingested Corpus Browser</div>
+        <div class="md-section-caption">Inspect raw data rows, tagged metadata, and platform sources.</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown('<div class="md-card">', unsafe_allow_html=True)
+    search_query_table = st.text_input("Filter table by keyword:", placeholder="e.g. receipt, date, album")
+    
+    display_df = retrieval_df.copy()
+    if search_query_table:
+        display_df = display_df[display_df['full_text'].str.contains(search_query_table, case=False, na=False)]
+        
+    st.dataframe(
+        display_df[['source_platform', 'problem_category', 'search_strategy', 'remembered_anchor', 'forgotten_anchor', 'full_text']],
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "source_platform": st.column_config.TextColumn("Platform", width="small"),
+            "problem_category": st.column_config.TextColumn("Search Issue", width="medium"),
+            "search_strategy": st.column_config.TextColumn("Strategy", width="medium"),
+            "remembered_anchor": st.column_config.TextColumn("Memory Cue", width="medium"),
+            "forgotten_anchor": st.column_config.TextColumn("Forgotten Detail", width="medium"),
+            "full_text": st.column_config.TextColumn("Full Feedback", width="large")
+        }
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
