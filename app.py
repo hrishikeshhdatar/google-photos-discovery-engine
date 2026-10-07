@@ -704,8 +704,20 @@ Provide a Markdown table comparing:
 Detail 3 actionable product initiatives for Google Photos to solve these friction points.
 """
                 with st.spinner("Generating summary..."):
-                    model = genai.GenerativeModel("gemini-2.0-flash")
-                    res = model.generate_content(prompt)
+                    candidate_models = ["gemini-2.5-flash", "gemini-1.5-flash"]
+                    res = None
+                    last_err = None
+
+                    for m_name in candidate_models:
+                        try:
+                            model = genai.GenerativeModel(m_name)
+                            res = model.generate_content(prompt)
+                            if res and res.text:
+                                break
+                        except Exception as e:
+                            last_err = e
+                            continue
+
                     if res and res.text:
                         res_text = res.text
                         if "# Executive Summary" in res_text:
@@ -715,7 +727,7 @@ Detail 3 actionable product initiatives for Google Photos to solve these frictio
                         st.markdown(res_text)
                         st.markdown('</div>', unsafe_allow_html=True)
                     else:
-                        st.error("Unable to generate summary from API.")
+                        st.error(f"Unable to generate summary: {str(last_err)}")
             except Exception as e:
                 st.error(f"Gemini API Error: {str(e)}")
 
