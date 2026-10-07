@@ -674,8 +674,9 @@ with tab1:
                 import google.generativeai as genai
                 genai.configure(api_key=api_key)
                 
-                selected_samples = retrieval_df['full_text'].head(30).tolist()
-                sample_text = "\n".join([f"- {text}" for text in selected_samples])
+                # Truncate context for fast processing
+                selected_samples = retrieval_df['full_text'].head(15).tolist()
+                sample_text = "\n".join([f"- {text[:250]}" for text in selected_samples])
                 
                 prompt = f"""You are a Principal Product Manager for Google Photos.
 
@@ -703,34 +704,16 @@ Provide a Markdown table comparing:
 ### 3. Strategic Opportunity Pillars
 Detail 3 actionable product initiatives for Google Photos to solve these friction points.
 """
-                with st.spinner("Generating summary..."):
-                    # Dynamically query active models available for generateContent
-                    candidate_models = []
-                    try:
-                        for m in genai.list_models():
-                            if 'generateContent' in m.supported_generation_methods:
-                                candidate_models.append(m.name)
-                    except Exception:
-                        pass
-
-                    flash_models = [m for m in candidate_models if 'flash' in m.lower()]
-                    pro_models = [m for m in candidate_models if 'pro' in m.lower()]
-                    other_models = [m for m in candidate_models if m not in flash_models and m not in pro_models]
-
-                    search_order = flash_models + pro_models + other_models + [
-                        "gemini-2.5-flash", "gemini-2.0-flash", "models/gemini-2.5-flash", "models/gemini-2.0-flash"
-                    ]
-
-                    seen = set()
-                    unique_candidates = [m for m in search_order if not (m in seen or seen.add(m))]
-
+                with st.spinner("Synthesize user feedback..."):
+                    # Fast-path target candidate models directly
+                    candidate_models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
                     res = None
                     last_err = None
 
-                    for m_name in unique_candidates:
+                    for m_name in candidate_models:
                         try:
                             model = genai.GenerativeModel(m_name)
-                            res = model.generate_content(prompt)
+                            res = model.generate_content(prompt, request_options={"timeout": 12})
                             if res and res.text:
                                 break
                         except Exception as e:
@@ -865,7 +848,7 @@ with tab3:
     """, unsafe_allow_html=True)
     
     with st.container(border=True):
-        st.markdown('<div style="font-family: \'Google Sans\', sans-serif; font-size: 16px; font-weight: 500;">Details people remember</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-family: "Google Sans", sans-serif; font-size: 16px; font-weight: 500;">Details people remember</div>', unsafe_allow_html=True)
         rem_counts = retrieval_df['remembered_anchor'].value_counts().reset_index()
         rem_counts.columns = ['Memory Cue', 'Mentions']
         st.dataframe(rem_counts, use_container_width=True, hide_index=True)
@@ -873,7 +856,7 @@ with tab3:
     st.markdown("<br>", unsafe_allow_html=True)
 
     with st.container(border=True):
-        st.markdown('<div style="font-family: \'Google Sans\', sans-serif; font-size: 16px; font-weight: 500;">Details people forget</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-family: "Google Sans", sans-serif; font-size: 16px; font-weight: 500;">Details people forget</div>', unsafe_allow_html=True)
         for_counts = retrieval_df['forgotten_anchor'].value_counts().reset_index()
         for_counts.columns = ['Forgotten Detail', 'Mentions']
         st.dataframe(for_counts, use_container_width=True, hide_index=True)
