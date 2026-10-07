@@ -16,13 +16,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Material Design 3 Design System Injection
+# Material Design 3 Design System Injection & Contrast Fixes
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Text:wght@400;500&family=Roboto:wght@400;500;700&display=swap');
 
-    /* Force Light Theme */
-    :root {
+    /* Force Light Theme Globally */
+    :root, [data-theme="light"], [data-theme="dark"] {
         color-scheme: light !important;
     }
 
@@ -183,7 +183,9 @@ st.markdown("""
         margin-bottom: 24px !important;
     }
 
-    /* Material Design 3 Tabs Styling */
+    /* =========================================================
+       1. FIX INVISIBLE TABS (st.tabs)
+       ========================================================= */
     div[data-testid="stTabs"] {
         margin-bottom: 24px !important;
     }
@@ -201,25 +203,49 @@ st.markdown("""
         font-family: 'Google Sans Text', 'Roboto', sans-serif !important;
         font-size: 14px !important;
         font-weight: 500 !important;
-        color: #5F6368 !important;
         background-color: transparent !important;
         border: none !important;
         border-radius: 0px !important;
         transition: background-color 150ms ease, color 150ms ease !important;
     }
 
+    /* Tab Text Color - Standard / Unselected State */
+    button[data-baseweb="tab"] p,
+    button[data-baseweb="tab"] div,
+    button[data-baseweb="tab"] span {
+        color: #5F6368 !important; /* Visible dark gray */
+        font-weight: 500 !important;
+        opacity: 1 !important;
+    }
+
+    /* Tab Hover State */
     button[data-baseweb="tab"]:hover {
-        color: #202124 !important;
         background-color: #F1F3F4 !important;
     }
 
+    button[data-baseweb="tab"]:hover p,
+    button[data-baseweb="tab"]:hover div,
+    button[data-baseweb="tab"]:hover span {
+        color: #1A73E8 !important; /* Blue text on hover */
+    }
+
+    /* Active / Selected Tab */
     button[aria-selected="true"] {
-        color: #1A73E8 !important;
-        font-weight: 500 !important;
+        background-color: transparent !important;
         border-bottom: 3px solid #1A73E8 !important;
         border-top-left-radius: 4px !important;
         border-top-right-radius: 4px !important;
-        background-color: transparent !important;
+    }
+
+    button[aria-selected="true"] p,
+    button[aria-selected="true"] div,
+    button[aria-selected="true"] span {
+        color: #1A73E8 !important; /* Active tab blue */
+        font-weight: 600 !important;
+    }
+
+    div[data-baseweb="tab-highlight"] {
+        background-color: #1A73E8 !important;
     }
 
     /* Standard MD3 Card Containers */
@@ -284,8 +310,9 @@ st.markdown("""
         cursor: not-allowed !important;
     }
 
-    /* Inputs & Text Area */
-    div[data-testid="stTextArea"] textarea, div[data-testid="stTextInput"] input, div[data-testid="stSelectbox"] div[role="combobox"] {
+    /* Inputs & Text Area Light Surface */
+    div[data-testid="stTextArea"] textarea, 
+    div[data-testid="stTextInput"] input {
         background-color: #FFFFFF !important;
         border: 1px solid #DADCE0 !important;
         border-radius: 8px !important;
@@ -295,13 +322,71 @@ st.markdown("""
         padding: 12px 16px !important;
     }
 
-    div[data-testid="stTextArea"] textarea:focus, div[data-testid="stTextInput"] input:focus {
+    div[data-testid="stTextArea"] textarea:focus, 
+    div[data-testid="stTextInput"] input:focus {
         border: 2px solid #1A73E8 !important;
         outline: none !important;
         box-shadow: none !important;
     }
 
-    div[data-testid="stTextArea"] label, div[data-testid="stTextInput"] label, div[data-testid="stSelectbox"] label, div[data-testid="stSlider"] label {
+    /* =========================================================
+       2. FIX DROPDOWN SELECTBOX (st.selectbox) CONTRAST
+       ========================================================= */
+    /* Closed selectbox container */
+    div[data-baseweb="select"] > div {
+        background-color: #FFFFFF !important;
+        border: 1px solid #DADCE0 !important;
+        border-radius: 8px !important;
+        color: #202124 !important;
+    }
+
+    div[data-baseweb="select"] span,
+    div[data-baseweb="select"] div,
+    div[data-baseweb="select"] input {
+        color: #202124 !important;
+        background-color: transparent !important;
+    }
+
+    div[data-baseweb="select"] svg {
+        fill: #5F6368 !important;
+    }
+
+    /* Dropdown popover menu surface */
+    div[data-baseweb="popover"],
+    div[data-baseweb="popover"] [data-baseweb="menu"],
+    div[data-baseweb="popover"] ul,
+    div[data-baseweb="popover"] div {
+        background-color: #FFFFFF !important;
+        color: #202124 !important;
+    }
+
+    div[data-baseweb="popover"] [data-baseweb="menu"] {
+        border: 1px solid #DADCE0 !important;
+        border-radius: 8px !important;
+        box-shadow: 0px 4px 12px rgba(60, 64, 67, 0.15) !important;
+    }
+
+    div[data-baseweb="popover"] li,
+    div[data-baseweb="popover"] li * {
+        background-color: #FFFFFF !important;
+        color: #202124 !important;
+        font-size: 14px !important;
+        font-family: 'Google Sans Text', 'Roboto', sans-serif !important;
+    }
+
+    /* Dropdown item hover & active states */
+    div[data-baseweb="popover"] li:hover,
+    div[data-baseweb="popover"] li:hover *,
+    div[data-baseweb="popover"] li[aria-selected="true"],
+    div[data-baseweb="popover"] li[aria-selected="true"] * {
+        background-color: #E8F0FE !important;
+        color: #1A73E8 !important;
+    }
+
+    div[data-testid="stTextArea"] label, 
+    div[data-testid="stTextInput"] label, 
+    div[data-testid="stSelectbox"] label, 
+    div[data-testid="stSlider"] label {
         font-size: 14px !important;
         font-weight: 500 !important;
         color: #202124 !important;
@@ -347,7 +432,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 1. SECURE API KEY RETRIEVAL (LOGIC UNCHANGED)
+# 1. SECURE API KEY RETRIEVAL
 # -----------------------------------------------------------------------------
 api_key = None
 try:
@@ -360,7 +445,7 @@ if not api_key:
     api_key = os.environ.get("GEMINI_API_KEY", "")
 
 # -----------------------------------------------------------------------------
-# 2. DATA INGESTION & HEURISTIC ENGINE (LOGIC UNCHANGED)
+# 2. DATA INGESTION & HEURISTIC ENGINE
 # -----------------------------------------------------------------------------
 @st.cache_data
 def load_and_analyze_corpus():
@@ -462,7 +547,7 @@ def load_and_analyze_corpus():
 df = load_and_analyze_corpus()
 
 # -----------------------------------------------------------------------------
-# PLOTLY HORIZONTAL BAR CHART HELPER (RESTYLED FOR MATERIAL 3)
+# PLOTLY HORIZONTAL BAR CHART HELPER
 # -----------------------------------------------------------------------------
 def render_horizontal_bar_chart(series_data, x_label="Mentions", height=320):
     chart_df = series_data.reset_index()
