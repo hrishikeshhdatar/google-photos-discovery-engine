@@ -7,7 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 # -----------------------------------------------------------------------------
-# PAGE CONFIGURATION & MATERIAL DESIGN 3 CSS
+# PAGE CONFIGURATION & GLOBAL LIGHT THEME ENFORCEMENT
 # -----------------------------------------------------------------------------
 st.set_page_config(
     page_title="Google Photos Search Insights Engine",
@@ -16,14 +16,18 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Material Design 3 Design System Injection & Contrast Fixes
+# Material Design 3 Design System Injection & Full Contrast Overrides
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Text:wght@400;500&family=Roboto:wght@400;500;700&display=swap');
 
-    /* Force Light Theme Globally */
-    :root, [data-theme="light"], [data-theme="dark"] {
+    /* 1. FORCE STREAMLIT INTERNAL THEME VARIABLES TO LIGHT MODE */
+    :root, [data-testid="stAppViewContainer"], .stApp, [class*="stApp"] {
         color-scheme: light !important;
+        --background-color: #FFFFFF !important;
+        --secondary-background-color: #F8F9FA !important;
+        --text-color: #202124 !important;
+        --primary-color: #1A73E8 !important;
     }
 
     /* Hide Default Streamlit Chrome */
@@ -32,15 +36,15 @@ st.markdown("""
         visibility: hidden !important;
     }
 
-    /* Canvas & Global Typography */
-    html, body, [class*="stApp"], .stApp {
+    /* Canvas & Global Background */
+    html, body, [data-testid="stAppViewContainer"], .stApp {
         background-color: #FFFFFF !important;
         color: #202124 !important;
         font-family: 'Google Sans Text', 'Roboto', Arial, sans-serif !important;
         -webkit-font-smoothing: antialiased;
     }
 
-    /* Main Container Max-Width & Spacing */
+    /* Main Container Spacing */
     .main .block-container {
         max-width: 1200px !important;
         padding-left: 32px !important;
@@ -166,7 +170,7 @@ st.markdown("""
         margin-bottom: 24px !important;
     }
 
-    /* Section Titles for Tabs */
+    /* Section Titles */
     .md-section-title {
         font-family: 'Google Sans', sans-serif !important;
         font-size: 22px !important;
@@ -184,7 +188,7 @@ st.markdown("""
     }
 
     /* =========================================================
-       1. FIX INVISIBLE TABS (st.tabs)
+       2. FIX INVISIBLE UNSELECTED TABS (st.tabs)
        ========================================================= */
     div[data-testid="stTabs"] {
         margin-bottom: 24px !important;
@@ -209,11 +213,9 @@ st.markdown("""
         transition: background-color 150ms ease, color 150ms ease !important;
     }
 
-    /* Tab Text Color - Standard / Unselected State */
-    button[data-baseweb="tab"] p,
-    button[data-baseweb="tab"] div,
-    button[data-baseweb="tab"] span {
-        color: #5F6368 !important; /* Visible dark gray */
+    /* Target ALL child text elements inside unselected tabs */
+    button[data-baseweb="tab"] * {
+        color: #3C4043 !important; /* Visible dark charcoal text */
         font-weight: 500 !important;
         opacity: 1 !important;
     }
@@ -223,23 +225,17 @@ st.markdown("""
         background-color: #F1F3F4 !important;
     }
 
-    button[data-baseweb="tab"]:hover p,
-    button[data-baseweb="tab"]:hover div,
-    button[data-baseweb="tab"]:hover span {
-        color: #1A73E8 !important; /* Blue text on hover */
+    button[data-baseweb="tab"]:hover * {
+        color: #1A73E8 !important; /* Primary blue on hover */
     }
 
     /* Active / Selected Tab */
-    button[aria-selected="true"] {
+    button[data-baseweb="tab"][aria-selected="true"] {
         background-color: transparent !important;
         border-bottom: 3px solid #1A73E8 !important;
-        border-top-left-radius: 4px !important;
-        border-top-right-radius: 4px !important;
     }
 
-    button[aria-selected="true"] p,
-    button[aria-selected="true"] div,
-    button[aria-selected="true"] span {
+    button[data-baseweb="tab"][aria-selected="true"] * {
         color: #1A73E8 !important; /* Active tab blue */
         font-weight: 600 !important;
     }
@@ -248,7 +244,78 @@ st.markdown("""
         background-color: #1A73E8 !important;
     }
 
-    /* Standard MD3 Card Containers */
+    /* =========================================================
+       3. FIX BLACK DATAFRAMES & TABLES (st.dataframe)
+       ========================================================= */
+    div[data-testid="stDataFrame"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #DADCE0 !important;
+        border-radius: 12px !important;
+        overflow: hidden !important;
+    }
+
+    div[data-testid="stDataFrame"] *,
+    div[data-testid="stDataFrame"] [data-testid="stTable"] {
+        background-color: #FFFFFF !important;
+        color: #202124 !important;
+    }
+
+    /* =========================================================
+       4. FIX BLACK SELECTBOX DROPDOWNS (st.selectbox)
+       ========================================================= */
+    /* Selectbox Main Bar Container */
+    div[data-baseweb="select"] {
+        background-color: #FFFFFF !important;
+        border-radius: 8px !important;
+    }
+
+    div[data-baseweb="select"] > div {
+        background-color: #FFFFFF !important;
+        border: 1px solid #DADCE0 !important;
+        border-radius: 8px !important;
+    }
+
+    div[data-baseweb="select"] * {
+        color: #202124 !important;
+        background-color: transparent !important;
+    }
+
+    div[data-baseweb="select"] svg {
+        fill: #5F6368 !important;
+    }
+
+    /* Selectbox Dropdown Menu Popover */
+    div[data-baseweb="popover"],
+    div[data-baseweb="popover"] [data-baseweb="menu"],
+    div[data-baseweb="popover"] ul,
+    div[data-baseweb="popover"] div {
+        background-color: #FFFFFF !important;
+        color: #202124 !important;
+    }
+
+    div[data-baseweb="popover"] [data-baseweb="menu"] {
+        border: 1px solid #DADCE0 !important;
+        border-radius: 8px !important;
+        box-shadow: 0px 4px 12px rgba(60, 64, 67, 0.15) !important;
+    }
+
+    div[data-baseweb="popover"] li,
+    div[data-baseweb="popover"] li * {
+        background-color: #FFFFFF !important;
+        color: #202124 !important;
+        font-size: 14px !important;
+        font-family: 'Google Sans Text', 'Roboto', sans-serif !important;
+    }
+
+    div[data-baseweb="popover"] li:hover,
+    div[data-baseweb="popover"] li:hover *,
+    div[data-baseweb="popover"] li[aria-selected="true"],
+    div[data-baseweb="popover"] li[aria-selected="true"] * {
+        background-color: #E8F0FE !important;
+        color: #1A73E8 !important;
+    }
+
+    /* Card Containers */
     .md-card {
         background-color: #F8F9FA !important;
         border: 1px solid #DADCE0 !important;
@@ -258,7 +325,6 @@ st.markdown("""
         margin-bottom: 24px !important;
     }
 
-    /* Streamlit Container/Expander Restyling */
     div[data-testid="stVerticalBlockBorderWrapper"], div[data-testid="stExpander"] {
         background-color: #F8F9FA !important;
         border: 1px solid #DADCE0 !important;
@@ -266,6 +332,24 @@ st.markdown("""
         box-shadow: none !important;
         padding: 16px !important;
         margin-bottom: 16px !important;
+    }
+
+    /* Form Labels */
+    div[data-testid="stTextArea"] label, 
+    div[data-testid="stTextInput"] label, 
+    div[data-testid="stSelectbox"] label, 
+    div[data-testid="stSlider"] label {
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        color: #202124 !important;
+        margin-bottom: 8px !important;
+    }
+
+    .input-helper-text {
+        font-size: 12px !important;
+        line-height: 16px !important;
+        color: #5F6368 !important;
+        margin-top: 4px !important;
     }
 
     /* Filled Pill Buttons */
@@ -299,116 +383,7 @@ st.markdown("""
         color: #FFFFFF !important;
     }
 
-    div[data-testid="stButton"] > button:focus-visible {
-        outline: 2px solid #1A73E8 !important;
-        outline-offset: 2px !important;
-    }
-
-    div[data-testid="stButton"] > button:disabled {
-        background-color: #E8EAED !important;
-        color: #9AA0A6 !important;
-        cursor: not-allowed !important;
-    }
-
-    /* Inputs & Text Area Light Surface */
-    div[data-testid="stTextArea"] textarea, 
-    div[data-testid="stTextInput"] input {
-        background-color: #FFFFFF !important;
-        border: 1px solid #DADCE0 !important;
-        border-radius: 8px !important;
-        color: #202124 !important;
-        font-family: 'Google Sans Text', 'Roboto', sans-serif !important;
-        font-size: 14px !important;
-        padding: 12px 16px !important;
-    }
-
-    div[data-testid="stTextArea"] textarea:focus, 
-    div[data-testid="stTextInput"] input:focus {
-        border: 2px solid #1A73E8 !important;
-        outline: none !important;
-        box-shadow: none !important;
-    }
-
-    /* =========================================================
-       2. FIX DROPDOWN SELECTBOX (st.selectbox) CONTRAST
-       ========================================================= */
-    /* Closed selectbox container */
-    div[data-baseweb="select"] > div {
-        background-color: #FFFFFF !important;
-        border: 1px solid #DADCE0 !important;
-        border-radius: 8px !important;
-        color: #202124 !important;
-    }
-
-    div[data-baseweb="select"] span,
-    div[data-baseweb="select"] div,
-    div[data-baseweb="select"] input {
-        color: #202124 !important;
-        background-color: transparent !important;
-    }
-
-    div[data-baseweb="select"] svg {
-        fill: #5F6368 !important;
-    }
-
-    /* Dropdown popover menu surface */
-    div[data-baseweb="popover"],
-    div[data-baseweb="popover"] [data-baseweb="menu"],
-    div[data-baseweb="popover"] ul,
-    div[data-baseweb="popover"] div {
-        background-color: #FFFFFF !important;
-        color: #202124 !important;
-    }
-
-    div[data-baseweb="popover"] [data-baseweb="menu"] {
-        border: 1px solid #DADCE0 !important;
-        border-radius: 8px !important;
-        box-shadow: 0px 4px 12px rgba(60, 64, 67, 0.15) !important;
-    }
-
-    div[data-baseweb="popover"] li,
-    div[data-baseweb="popover"] li * {
-        background-color: #FFFFFF !important;
-        color: #202124 !important;
-        font-size: 14px !important;
-        font-family: 'Google Sans Text', 'Roboto', sans-serif !important;
-    }
-
-    /* Dropdown item hover & active states */
-    div[data-baseweb="popover"] li:hover,
-    div[data-baseweb="popover"] li:hover *,
-    div[data-baseweb="popover"] li[aria-selected="true"],
-    div[data-baseweb="popover"] li[aria-selected="true"] * {
-        background-color: #E8F0FE !important;
-        color: #1A73E8 !important;
-    }
-
-    div[data-testid="stTextArea"] label, 
-    div[data-testid="stTextInput"] label, 
-    div[data-testid="stSelectbox"] label, 
-    div[data-testid="stSlider"] label {
-        font-size: 14px !important;
-        font-weight: 500 !important;
-        color: #202124 !important;
-        margin-bottom: 8px !important;
-    }
-
-    .input-helper-text {
-        font-size: 12px !important;
-        line-height: 16px !important;
-        color: #5F6368 !important;
-        margin-top: 4px !important;
-    }
-
-    /* Dataframe Table Container Styling */
-    div[data-testid="stDataFrame"] {
-        border: 1px solid #DADCE0 !important;
-        border-radius: 12px !important;
-        background-color: #FFFFFF !important;
-        overflow: hidden !important;
-    }
-
-    /* Summary Markdown Output Card */
+    /* Summary Card Output */
     .summary-output-card {
         background-color: #F8F9FA !important;
         border: 1px solid #DADCE0 !important;
@@ -555,11 +530,9 @@ def render_horizontal_bar_chart(series_data, x_label="Mentions", height=320):
     total_val = chart_df['count'].sum() if chart_df['count'].sum() > 0 else 1
     chart_df['share'] = (chart_df['count'] / total_val) * 100
     
-    # Sort ascending so top value renders at top of y-axis in Plotly
     chart_df = chart_df.sort_values(by='count', ascending=True)
     chart_df['label_text'] = chart_df.apply(lambda r: f"{r['count']:,} · {r['share']:.1f}%", axis=1)
 
-    # Top bar gets #1A73E8, remaining bars get #AECBFA
     colors = ['#AECBFA'] * len(chart_df)
     if len(colors) > 0:
         colors[-1] = '#1A73E8'
@@ -650,7 +623,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 ])
 
 # -----------------------------------------------------------------------------
-# TAB 1: AI SUMMARY (GEMINI AI SYNTHESIZER)
+# TAB 1: AI SUMMARY
 # -----------------------------------------------------------------------------
 with tab1:
     st.markdown("""
